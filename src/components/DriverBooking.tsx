@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Car, User, Star, Phone, MapPin, X, Clock } from 'lucide-react'
+import { Car, User, Star, Phone, X, Clock } from 'lucide-react'
 
 const availableDrivers = [
   {
@@ -14,8 +14,7 @@ const availableDrivers = [
     carNumber: 'DL 12 AB 1234',
     distance: '2.3 km',
     eta: '5 mins',
-    price: 120,
-    photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
+    price: 120
   },
   {
     id: '2',
@@ -26,20 +25,7 @@ const availableDrivers = [
     carNumber: 'DL 10 CD 5678',
     distance: '1.8 km',
     eta: '3 mins', 
-    price: 100,
-    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
-  },
-  {
-    id: '3',
-    name: 'Suresh Singh',
-    rating: 4.7,
-    trips: 750,
-    carModel: 'Honda City',
-    carNumber: 'DL 08 EF 9012',
-    distance: '3.1 km',
-    eta: '7 mins',
-    price: 150,
-    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face'
+    price: 100
   }
 ]
 
@@ -47,24 +33,38 @@ export function DriverBooking() {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null)
   const [bookingStep, setBookingStep] = useState<'list' | 'booking' | 'confirmed'>('list')
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Fix SSR issues
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleBookDriver = (driverId: string) => {
+    if (!isMounted) return
+    
     setSelectedDriver(driverId)
     setBookingStep('booking')
     
-    // Simulate booking process
     setTimeout(() => {
       setBookingStep('confirmed')
     }, 2000)
   }
 
   const resetBooking = () => {
+    if (!isMounted) return
+    
     setSelectedDriver(null)
     setBookingStep('list')
     setIsOpen(false)
   }
 
   const selectedDriverData = availableDrivers.find(d => d.id === selectedDriver)
+
+  // Don't render until mounted
+  if (!isMounted) {
+    return null
+  }
 
   return (
     <>
@@ -89,7 +89,11 @@ export function DriverBooking() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={(e) => e.target === e.currentTarget && resetBooking()}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                resetBooking()
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
@@ -172,20 +176,6 @@ export function DriverBooking() {
                   />
                   <h3 className="text-xl font-bold text-white mb-2">Booking {selectedDriverData.name}</h3>
                   <p className="text-gray-400 mb-4">Please wait while we confirm your booking...</p>
-                  <div className="bg-white/5 rounded-lg p-4 text-left">
-                    <div className="flex items-center gap-3 mb-2">
-                      <User size={16} className="text-blue-400" />
-                      <span className="text-white">{selectedDriverData.name}</span>
-                    </div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <Car size={16} className="text-green-400" />
-                      <span className="text-gray-300">{selectedDriverData.carModel}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Clock size={16} className="text-orange-400" />
-                      <span className="text-gray-300">ETA: {selectedDriverData.eta}</span>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -203,14 +193,6 @@ export function DriverBooking() {
                       <div className="flex justify-between text-white">
                         <span>Driver:</span>
                         <span>{selectedDriverData.name}</span>
-                      </div>
-                      <div className="flex justify-between text-white">
-                        <span>Vehicle:</span>
-                        <span>{selectedDriverData.carModel}</span>
-                      </div>
-                      <div className="flex justify-between text-white">
-                        <span>Number:</span>
-                        <span>{selectedDriverData.carNumber}</span>
                       </div>
                       <div className="flex justify-between text-white">
                         <span>ETA:</span>

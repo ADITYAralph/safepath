@@ -6,31 +6,39 @@ import { motion } from 'framer-motion'
 import { SafetyMap } from '@/components/Map/SafetyMap'
 import { DriverBooking } from '@/components/DriverBooking'
 import { MonumentSidebar } from '@/components/MonumentSidebar'
-import { AlertTriangle, Navigation, Shield, LogOut, Menu, X } from 'lucide-react'
+import { AlertTriangle, Navigation, Shield, LogOut } from 'lucide-react'
 
 export default function Dashboard() {
   const router = useRouter()
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [userInfo, setUserInfo] = useState<{ name: string; email: string } | null>(null)
   const [isARMode, setIsARMode] = useState(false)
-  const [showMobileSidebar, setShowMobileSidebar] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('safepath_token')
-    if (!token) {
-      router.push('/signin')
-      return
-    }
+    setIsMounted(true)
 
-    // Get user info
-    const savedUser = localStorage.getItem('safepath_user')
-    if (savedUser) {
-      setUserInfo(JSON.parse(savedUser))
+    // Check authentication only on client-side
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('safepath_token')
+      if (!token) {
+        router.push('/signin')
+        return
+      }
+
+      // Get user info safely
+      try {
+        const savedUser = localStorage.getItem('safepath_user')
+        if (savedUser) {
+          setUserInfo(JSON.parse(savedUser))
+        }
+      } catch (error) {
+        console.error('Error parsing user data:', error)
+      }
     }
 
     // Get location
-    if (navigator.geolocation) {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLocation({
@@ -38,7 +46,8 @@ export default function Dashboard() {
             lng: position.coords.longitude,
           })
         },
-        () => {
+        (error) => {
+          console.error('Location error:', error)
           // Fallback location (Mumbai)
           setLocation({ lat: 19.0760, lng: 72.8777 })
         }
@@ -49,11 +58,14 @@ export default function Dashboard() {
   }, [router])
 
   const handleLogout = () => {
-    localStorage.clear()
-    router.push('/signin')
+    if (typeof window !== 'undefined') {
+      localStorage.clear()
+      router.push('/signin')
+    }
   }
 
-  if (!location) {
+  // Don't render until mounted to prevent SSR issues
+  if (!isMounted || !location) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center bg-black/50 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
@@ -63,7 +75,7 @@ export default function Dashboard() {
             className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
           />
           <h2 className="text-xl font-bold text-white mb-4">Setting Up SafePath</h2>
-          <p className="text-gray-300">Getting your location & loading components...</p>
+          <p className="text-gray-300">Loading your dashboard...</p>
         </div>
       </div>
     )
@@ -75,19 +87,12 @@ export default function Dashboard() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/20">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowMobileSidebar(!showMobileSidebar)}
-              className="md:hidden p-2 text-white rounded-lg hover:bg-white/10 transition"
-            >
-              {showMobileSidebar ? <X size={20} /> : <Menu size={20} />}
-            </button>
-            
             <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
               <Shield className="text-white" size={20} />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">SafePath</h1>
-              <p className="text-xs text-gray-300">Hello, {userInfo?.name || 'User'}!</p>
+              <p className="text-xs text-gray-300">Welcome, {userInfo?.name || 'User'}!</p>
             </div>
           </div>
           
@@ -96,29 +101,18 @@ export default function Dashboard() {
             className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition"
           >
             <LogOut size={16} />
-            <span className="hidden sm:inline">Sign Out</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </header>
 
-      {/* Monument Sidebar - Desktop */}
-      <div className="hidden md:block">
-        <MonumentSidebar />
-      </div>
-
-      {/* Monument Sidebar - Mobile */}
-      {showMobileSidebar && (
-        <div className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm">
-          <div className="w-80 h-full">
-            <MonumentSidebar />
-          </div>
-        </div>
-      )}
+      {/* Monument Sidebar */}
+      <MonumentSidebar />
 
       {/* Main Content */}
       <main className="h-screen pt-20">
         <div className="flex h-full">
-          {/* Map Section */}
+          {/* Map Section - Adjusted for sidebar */}
           <div className="w-full md:w-7/12 relative md:ml-80">
             <SafetyMap 
               userLocation={location}
@@ -190,7 +184,7 @@ export default function Dashboard() {
       {/* SOS Button */}
       <button
         onClick={() => {
-          const message = `🚨 EMERGENCY ALERT!\n\nUser: ${userInfo?.name}\nEmail: ${userInfo?.email}\nLocation: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}\n\nEmergency services notified!\nLocal authorities alerted!\nHelp is on the way!`
+          const message = `🚨 EMERGENCY ALERT!\n\nUser: ${userInfo?.name || 'Unknown'}\nEmail: ${userInfo?.email || 'Unknown'}\nLocation: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}\n\nEmergency services notified!`
           alert(message)
         }}
         className="fixed bottom-20 right-6 bg-red-600 p-5 rounded-full text-white shadow-lg hover:bg-red-700 transition z-50"
@@ -202,7 +196,7 @@ export default function Dashboard() {
       <div className="fixed bottom-6 right-6 bg-black/60 backdrop-blur-xl rounded-full px-3 py-2 text-white flex items-center gap-2">
         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
         <Navigation size={16} />
-        <span className="hidden sm:inline">Live GPS</span>
+        <span>Live GPS</span>
       </div>
     </div>
   )

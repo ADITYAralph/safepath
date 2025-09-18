@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, MapPin, Clock, Users, Star } from 'lucide-react'
@@ -51,10 +51,23 @@ const monuments = [
 export function MonumentSidebar() {
   const router = useRouter()
   const [selectedMonument, setSelectedMonument] = useState<string | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Fix SSR issues
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleMonumentClick = (id: string) => {
+    if (!isMounted) return // Prevent action during SSR
+    
     setSelectedMonument(id)
     router.push(`/monument/${id}`)
+  }
+
+  // Don't render until mounted to prevent SSR issues
+  if (!isMounted) {
+    return null
   }
 
   return (
