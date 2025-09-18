@@ -13,7 +13,6 @@ const monuments = [
     distance: '2.3 km',
     rating: 4.8,
     visitors: '12k',
-    image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=400&h=300&fit=crop',
     description: 'Historic Mughal fortress and UNESCO World Heritage Site'
   },
   {
@@ -23,7 +22,6 @@ const monuments = [
     distance: '5.7 km',
     rating: 4.7,
     visitors: '8k',
-    image: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=400&h=300&fit=crop',
     description: 'Architectural marvel known for its flower-like shape'
   },
   {
@@ -33,7 +31,6 @@ const monuments = [
     distance: '3.1 km',
     rating: 4.6,
     visitors: '15k',
-    image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=400&h=300&fit=crop',
     description: 'War memorial and iconic landmark of New Delhi'
   },
   {
@@ -43,7 +40,6 @@ const monuments = [
     distance: '8.2 km', 
     rating: 4.5,
     visitors: '6k',
-    image: 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?w=400&h=300&fit=crop',
     description: 'Tallest brick minaret in the world'
   }
 ]
@@ -52,17 +48,35 @@ export function MonumentSidebar() {
   const router = useRouter()
   const [selectedMonument, setSelectedMonument] = useState<string | null>(null)
   const [isMounted, setIsMounted] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
 
   // Fix SSR issues
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  const handleMonumentClick = (id: string) => {
-    if (!isMounted) return // Prevent action during SSR
+  const handleMonumentClick = async (id: string) => {
+    if (!isMounted || isNavigating) return
     
-    setSelectedMonument(id)
-    router.push(`/monument/${id}`)
+    try {
+      setIsNavigating(true)
+      setSelectedMonument(id)
+      
+      // Safe navigation with error handling
+      await router.push(`/monument/${id}`)
+    } catch (error) {
+      console.error('Navigation error:', error)
+      
+      // Fallback: show alert with monument info instead of navigation
+      const monument = monuments.find(m => m.id === id)
+      if (monument) {
+        alert(`🏛️ ${monument.name}\n\n📍 ${monument.description}\n📊 Rating: ${monument.rating}/5\n👥 ${monument.visitors} daily visitors\n📐 ${monument.distance} away\n\n✨ Monument details page coming soon!`)
+      }
+      
+      setSelectedMonument(null)
+    } finally {
+      setIsNavigating(false)
+    }
   }
 
   // Don't render until mounted to prevent SSR issues
@@ -90,12 +104,23 @@ export function MonumentSidebar() {
               selectedMonument === monument.id
                 ? 'bg-blue-500/20 border-blue-500/50'
                 : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-            }`}
+            } ${isNavigating ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {/* Monument Image */}
-            <div className="w-full h-32 rounded-lg mb-3 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+            <div className="w-full h-32 rounded-lg mb-3 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center relative">
               <MapPin size={32} className="text-white" />
               <span className="ml-2 text-white font-medium">{monument.name}</span>
+              
+              {/* Loading indicator */}
+              {isNavigating && selectedMonument === monument.id && (
+                <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Monument Info */}
