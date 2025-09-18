@@ -62,26 +62,28 @@ export default function RegisterPage() {
       
       {/* Animated Background Particles */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-blue-400/30 rounded-full"
-            animate={{
-              x: [0, Math.random() * 100 - 50],
-              y: [0, Math.random() * 100 - 50],
-            }}
-            transition={{
-              duration: 10 + Math.random() * 5,
-              repeat: Infinity,
-              ease: "linear",
-              repeatType: "reverse"
-            }}
-            style={{
-              left: Math.random() * window.innerWidth,
-              top: Math.random() * window.innerHeight,
-            }}
-          />
-        ))}
+        const [particles, setParticles] = useState([])
+
+useEffect(() => {
+  // Generate particles safely on client-side
+  const newParticles = Array.from({ length: 15 }, (_, i) => ({
+    id: i,
+    left: Math.random() * window.innerWidth,
+    top: Math.random() * window.innerHeight,
+  }))
+  setParticles(newParticles)
+}, [])
+
+// In your JSX:
+{particles.map((particle) => (
+  <motion.div
+    key={particle.id}
+    style={{
+      left: particle.left,
+      top: particle.top,
+    }}
+  />
+))}
       </div>
 
       {/* Register Form */}
