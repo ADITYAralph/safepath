@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SafetyMap } from '@/components/Map/SafetyMap'
 import { LoadingScreen } from '@/components/UI/LoadingScreen'
 import { DriverBooking } from '@/components/DriverBooking'
 import { MonumentSidebar } from '@/components/MonumentSidebar'
-import { useGeofence } from '@/hooks/useGeofence'
-import { MapPin, Shield, AlertTriangle, Menu, X, Activity, Users, Camera, Zap, Navigation, Car, Building } from 'lucide-react'
+import { MapPin, Shield, AlertTriangle, Menu, X, Activity, Users, Camera, Zap, Navigation, LogOut } from 'lucide-react'
 
-// Your real safety data with hotspots for geofencing
+// Your real safety data
 const YOUR_SAFETY_DATA = {
   incidents: [
     {
@@ -42,7 +42,6 @@ const YOUR_SAFETY_DATA = {
     incidentCount: 4,
     peopleCount: 1200
   },
-  // Geofencing hotspots
   hotspots: [
     {
       lat: 28.6139,
@@ -60,18 +59,58 @@ const YOUR_SAFETY_DATA = {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [appLoaded, setAppLoaded] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [userInfo, setUserInfo] = useState<{ name: string; email: string } | null>(null)
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationLoading, setLocationLoading] = useState(true)
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null)
   const [isARMode, setIsARMode] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
 
-  // Geofencing integration
-  useGeofence(YOUR_SAFETY_DATA.hotspots, location)
+  // Check authentication after loading screen completes
+  const handleLoadingComplete = () => {
+    setAppLoaded(true)
+    
+    // Check if user is authenticated
+    const token = localStorage.getItem('safepath_token')
+    if (token) {
+      try {
+        // You can add JWT verification here if needed
+        // For now, just check if token exists
+        setIsAuthenticated(true)
+        
+        // Get user info from localStorage or decode from token
+        const savedUser = localStorage.getItem('safepath_user')
+        if (savedUser) {
+          setUserInfo(JSON.parse(savedUser))
+        }
+      } catch (error) {
+        console.error('Token validation error:', error)
+        localStorage.removeItem('safepath_token')
+        localStorage.removeItem('safepath_user')
+        router.push('/signin')
+      }
+    } else {
+      // No token, redirect to signin
+      router.push('/signin')
+    }
+    setAuthChecked(true)
+  }
+
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem('safepath_token')
+    localStorage.removeItem('safepath_user')
+    router.push('/signin')
+  }
 
   // Enhanced Real Location Detection
   useEffect(() => {
+    if (!isAuthenticated) return
+
     const getCurrentLocation = () => {
       if (!navigator.geolocation) {
         setLocationLoading(false)
@@ -96,6 +135,7 @@ export default function Home() {
           setLocationLoading(false)
         },
         (error) => {
+          console.log('Location error:', error)
           // Use Mumbai as fallback
           setLocation({
             lat: 19.0760,
@@ -107,17 +147,33 @@ export default function Home() {
       )
     }
 
-    if (appLoaded) {
-      getCurrentLocation()
-    }
-  }, [appLoaded])
+    getCurrentLocation()
+  }, [isAuthenticated])
 
-  // Show loading screen until app is loaded
+  // Show loading screen first
   if (!appLoaded) {
-    return <LoadingScreen onAnimationComplete={() => setAppLoaded(true)} />
+    return <LoadingScreen onAnimationComplete={handleLoadingComplete} />
   }
 
-  // Show location loading after app loaded
+  // Show nothing while checking auth (prevents flash)
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
+        />
+      </div>
+    )
+  }
+
+  // If not authenticated, show nothing (user gets redirected)
+  if (!isAuthenticated) {
+    return null
+  }
+
+  // Show location loading after authentication
   if (locationLoading || !location) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -136,7 +192,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* GLASS HEADER WITH ANIMATED SAFEPATH TITLE */}
+      {/* GLASS HEADER WITH USER INFO */}
       <motion.header 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -187,7 +243,7 @@ export default function Home() {
                   transition={{ delay: 1.2, duration: 0.5 }}
                   className="text-xs text-gray-300"
                 >
-                  AI Tourist Safety Companion
+                  Welcome, {userInfo?.name || 'User'}
                 </motion.p>
               </div>
             </motion.div>
@@ -208,6 +264,27 @@ export default function Home() {
                 {locationAccuracy && (
                   <span className="text-xs text-gray-400">±{Math.round(locationAccuracy)}m</span>
                 )}
+              </motion.div>
+
+              {/* User Menu */}
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.6, duration: 0.5 }}
+                className="relative"
+              >
+                <motion.button
+                  whileHover={{ 
+                    background: "rgba(255, 255, 255, 0.2)",
+                    scale: 1.1 
+                  }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleLogout}
+                  className="p-2 bg-white/10 backdrop-blur-sm rounded-lg transition-all duration-200 border border-white/20"
+                  title="Sign Out"
+                >
+                  <LogOut size={18} className="text-white" />
+                </motion.button>
               </motion.div>
               
               <motion.button
@@ -251,7 +328,6 @@ export default function Home() {
               transition={{ delay: 2, duration: 0.6 }}
               className="absolute bottom-6 left-20 z-30"
             >
-
               <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
                 <h3 className="font-semibold text-white text-sm mb-4">Live Safety Metrics</h3>
                 <div className="grid grid-cols-2 gap-4 text-center">
@@ -360,8 +436,8 @@ export default function Home() {
         whileTap={{ scale: 0.9 }}
         className="fixed bottom-36 right-6 z-50 w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-full shadow-2xl backdrop-blur-xl border-2 border-red-400/20 flex items-center justify-center"
         onClick={() => {
-          if (location) {
-            alert(`🚨 EMERGENCY ALERT ACTIVATED!\n\n📍 Your Location: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}\n📱 Emergency contacts notified\n🚔 Local authorities alerted\n⏰ Help is on the way`)
+          if (location && userInfo) {
+            alert(`🚨 EMERGENCY ALERT ACTIVATED!\n\n👤 User: ${userInfo.name}\n📧 Email: ${userInfo.email}\n📍 Location: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}\n📱 Emergency contacts notified\n🚔 Local authorities alerted\n⏰ Help is on the way`)
           }
         }}
       >
@@ -398,6 +474,13 @@ export default function Home() {
               </h2>
               
               <div className="space-y-4">
+                {/* User Info Card */}
+                <div className="bg-purple-500/20 backdrop-blur-sm p-4 rounded-xl border border-purple-500/30">
+                  <h3 className="font-semibold text-purple-300 mb-2">User Profile</h3>
+                  <p className="text-sm text-purple-200">{userInfo?.name}</p>
+                  <p className="text-xs text-purple-300 mt-1">{userInfo?.email}</p>
+                </div>
+
                 <div className="bg-blue-500/20 backdrop-blur-sm p-4 rounded-xl border border-blue-500/30">
                   <h3 className="font-semibold text-blue-300 mb-2">Your Location</h3>
                   <p className="text-sm text-blue-200 font-mono">{location.lat.toFixed(6)}, {location.lng.toFixed(6)}</p>
@@ -434,6 +517,17 @@ export default function Home() {
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-medium shadow-xl hover:shadow-2xl transition-all duration-200"
                 >
                   View Full Analytics
+                </motion.button>
+
+                {/* Logout Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleLogout}
+                  className="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white py-3 rounded-xl font-medium shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <LogOut size={16} />
+                  Sign Out
                 </motion.button>
               </div>
             </div>
