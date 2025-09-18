@@ -1,14 +1,63 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, Shield, Camera, Users, Eye, Zap, Navigation } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Shield, Eye, Zap } from 'lucide-react'
+
+interface Incident {
+  id: string
+  type: string
+  severity: 'low' | 'medium' | 'high'
+  lat: number
+  lng: number
+  description?: string
+  timeAgo?: string
+  reports?: number
+  verified?: boolean
+}
+
+interface RiskArea {
+  id: string
+  center: { lat: number; lng: number }
+  risk: 'low' | 'medium' | 'high'
+  radius: number
+  reason: string
+}
+
+interface CctvCamera {
+  id: string
+  lat: number
+  lng: number
+  active: boolean
+}
+
+interface SafetyMetrics {
+  safetyScore: number
+  cctvCount: number
+  incidentCount: number
+  peopleCount: number
+}
+
+interface Hotspot {
+  lat: number
+  lng: number
+  radius: number
+  name: string
+}
+
+interface SafetyData {
+  incidents: Incident[]
+  riskAreas: RiskArea[]
+  cctvCameras: CctvCamera[]
+  safetyMetrics: SafetyMetrics
+  hotspots?: Hotspot[]
+}
 
 interface SafetyMapProps {
   userLocation: { lat: number; lng: number } | null
   onToggleAR?: () => void
   isARMode?: boolean
-  safetyData?: any
+  safetyData?: SafetyData
 }
 
 export function SafetyMap({ userLocation, onToggleAR, isARMode = false, safetyData }: SafetyMapProps) {
@@ -16,13 +65,19 @@ export function SafetyMap({ userLocation, onToggleAR, isARMode = false, safetyDa
   const mapInstance = useRef<google.maps.Map | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
   const [selectedRoute, setSelectedRoute] = useState<'safest' | 'fastest'>('safest')
-  const [showDetails, setShowDetails] = useState(false)
 
   useEffect(() => {
     if (!mapContainer.current || !userLocation) return
 
     const initMap = () => {
       try {
+        // Check if Google Maps API is loaded
+        if (typeof window.google === 'undefined' || typeof window.google.maps === 'undefined') {
+          console.log('Google Maps API not yet loaded, waiting...')
+          setTimeout(initMap, 100)
+          return
+        }
+
         // Professional dark map style
         const map = new google.maps.Map(mapContainer.current!, {
           center: { lat: userLocation.lat, lng: userLocation.lng },
@@ -92,7 +147,7 @@ export function SafetyMap({ userLocation, onToggleAR, isARMode = false, safetyDa
 
         // Add your real data markers if provided
         if (safetyData?.incidents) {
-          safetyData.incidents.forEach((incident: any) => {
+          safetyData.incidents.forEach((incident: Incident) => {
             const color = incident.severity === 'high' ? '#ef4444' : 
                          incident.severity === 'medium' ? '#f59e0b' : '#10b981'
             
@@ -119,21 +174,8 @@ export function SafetyMap({ userLocation, onToggleAR, isARMode = false, safetyDa
       }
     }
 
-    if (window.google) {
-      initMap()
-    } else {
-      const script = document.createElement('script')
-      // FIXED: Added region and better error handling
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&region=IN&language=en`
-      script.async = true
-      script.defer = true
-      script.onload = initMap
-      script.onerror = () => {
-        console.error('Failed to load Google Maps - check API key and billing')
-        setIsMapLoaded(true) // Show fallback
-      }
-      document.head.appendChild(script)
-    }
+    // Start initialization
+    initMap()
   }, [userLocation, selectedRoute, safetyData])
 
   if (!userLocation) {
@@ -141,7 +183,7 @@ export function SafetyMap({ userLocation, onToggleAR, isARMode = false, safetyDa
       <div className="h-full flex items-center justify-center bg-black">
         <div className="text-center">
           <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-            <MapPin size={48} className="mx-auto text-blue-400 mb-4" />
+            <Shield size={48} className="mx-auto text-blue-400 mb-4" />
           </motion.div>
           <h3 className="text-lg font-semibold text-white mb-2">Getting Your Location</h3>
           <p className="text-gray-400">Please allow location access...</p>
@@ -155,7 +197,7 @@ export function SafetyMap({ userLocation, onToggleAR, isARMode = false, safetyDa
       <div ref={mapContainer} className="w-full h-full" />
       
       {/* Controls - Top Left - Moved right to avoid sidebar */}
-        <div className="absolute top-6 left-20 z-20">
+      <div className="absolute top-6 left-20 z-20">
         <div className="bg-black/50 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl border border-white/10">
           <div className="flex gap-2 mb-4">
             <motion.button
@@ -208,7 +250,7 @@ export function SafetyMap({ userLocation, onToggleAR, isARMode = false, safetyDa
               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
               className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
             />
-            <p className="text-white font-medium">Loading Real Location Data...</p>
+            <p className="text-white font-medium">Loading Map...</p>
           </div>
         </div>
       )}
