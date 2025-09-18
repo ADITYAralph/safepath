@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, MapPin, Clock, Users, Star, Camera, Share2, Heart, Navigation } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, Users, Star, Camera, Share2, Heart, Navigation, Eye } from 'lucide-react'
+import Image from 'next/image'
 
 const monumentData: { [key: string]: any } = {
   '1': {
@@ -13,6 +14,7 @@ const monumentData: { [key: string]: any } = {
     distance: '2.3 km',
     rating: 4.8,
     visitors: '12k',
+    image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800&h=500&fit=crop&crop=center',
     description: 'The Red Fort is a historic fortified palace of the Mughal emperors that served as the main residence of the Mughal Emperors for nearly 200 years.',
     history: 'Built in 1648 by the fifth Mughal Emperor Shah Jahan, the Red Fort served as the main residence of the Mughal dynasty for nearly 200 years.',
     timings: '9:30 AM - 4:30 PM (Closed on Mondays)',
@@ -34,6 +36,7 @@ const monumentData: { [key: string]: any } = {
     distance: '5.7 km',
     rating: 4.7,
     visitors: '8k',
+    image: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=800&h=500&fit=crop&crop=center',
     description: 'The Lotus Temple is a Baháʼí House of Worship notable for its flowerlike shape. It has become a prominent attraction in the city.',
     history: 'Completed in 1986, the Lotus Temple was designed by Iranian architect Fariborz Sahba and serves as the Mother Temple of the Indian subcontinent.',
     timings: '6:00 AM - 7:00 PM (Closed on Mondays)',
@@ -55,6 +58,7 @@ const monumentData: { [key: string]: any } = {
     distance: '3.1 km',
     rating: 4.6,
     visitors: '15k',
+    image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800&h=500&fit=crop&crop=center',
     description: 'India Gate is a war memorial located astride the Rajpath, on the eastern edge of the ceremonial axis of New Delhi.',
     history: 'Designed by Sir Edwin Lutyens, India Gate was inaugurated in 1931. It commemorates 70,000 soldiers of the British Indian Army who died in World War I.',
     timings: 'Open 24 hours (Best visited during daytime)',
@@ -76,6 +80,7 @@ const monumentData: { [key: string]: any } = {
     distance: '8.2 km',
     rating: 4.5,
     visitors: '6k',
+    image: 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?w=800&h=500&fit=crop&crop=center',
     description: 'Qutub Minar is a minaret and victory tower that forms part of the Qutb complex, a UNESCO World Heritage Site in the Mehrauli area of Delhi.',
     history: 'Construction began in 1192 by Qutb-ud-Din Aibak and was completed by his successor Iltutmish. It stands 73 meters tall with 5 distinct stories.',
     timings: 'Sunrise to Sunset (Closed on Mondays)',
@@ -107,6 +112,10 @@ export default function MonumentPage() {
     setIsLoading(false)
   }, [params])
 
+  const handleARView = () => {
+    router.push(`/monument/${monument.id}/ar`)
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -137,7 +146,13 @@ export default function MonumentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div 
+      className="min-h-screen text-white relative bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://user-gen-media-assets.s3.amazonaws.com/gemini_images/30793685-7b85-4ea7-9917-339226cb9af9.png')`,
+        backgroundAttachment: 'fixed'
+      }}
+    >
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/20">
         <div className="flex items-center justify-between px-6 py-4">
@@ -171,46 +186,95 @@ export default function MonumentPage() {
       {/* Main Content */}
       <main className="pt-20 pb-6">
         <div className="max-w-4xl mx-auto px-6">
-          {/* Hero Image */}
-          <div className="w-full h-80 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mb-8">
-            <div className="text-center">
-              <Camera size={48} className="mx-auto mb-4 text-white/80" />
-              <p className="text-white/80">Monument Photo</p>
+          {/* Hero Section with Real Monument Image */}
+          <div className="relative w-full h-96 rounded-2xl overflow-hidden mb-8 group">
+            <Image
+              src={monument.image}
+              alt={monument.name}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              priority
+            />
+            
+            {/* AR View Button Overlay */}
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleARView}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-2xl backdrop-blur-sm border border-white/20 flex items-center gap-3"
+              >
+                <Eye size={24} />
+                AR View Experience
+              </motion.button>
             </div>
+
+            {/* Floating AR Button */}
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleARView}
+              className="absolute bottom-6 right-6 bg-gradient-to-r from-purple-500 to-indigo-500 text-white p-4 rounded-full shadow-2xl backdrop-blur-sm border border-white/30 hover:from-purple-600 hover:to-indigo-600 transition-all duration-300"
+            >
+              <Eye size={24} />
+            </motion.button>
           </div>
 
           {/* Monument Info */}
           <div className="grid md:grid-cols-3 gap-8">
             {/* Main Content */}
-            <div className="md:col-span-2 space-y-6">
+            <div className="md:col-span-2 space-y-6 bg-black/40 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
               <div>
-                <h1 className="text-4xl font-bold mb-4">{monument.name}</h1>
+                <h1 className="text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+                  {monument.name}
+                </h1>
                 <p className="text-gray-300 text-lg leading-relaxed">{monument.description}</p>
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold mb-4">History</h2>
+                <h2 className="text-2xl font-semibold mb-4 text-white">History</h2>
                 <p className="text-gray-300 leading-relaxed">{monument.history}</p>
               </div>
 
               <div>
-                <h2 className="text-2xl font-semibold mb-4">Highlights</h2>
-                <ul className="space-y-2">
+                <h2 className="text-2xl font-semibold mb-4 text-white">Highlights</h2>
+                <ul className="space-y-3">
                   {monument.highlights.map((highlight: string, index: number) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                    <motion.li 
+                      key={index} 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-start gap-3"
+                    >
+                      <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mt-2 flex-shrink-0"></div>
                       <span className="text-gray-300">{highlight}</span>
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
               </div>
+
+              {/* Large AR View Button */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleARView}
+                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-3 border border-white/20"
+              >
+                <Eye size={24} />
+                <span>Experience in AR View</span>
+                <div className="bg-white/20 px-2 py-1 rounded-full text-xs">NEW</div>
+              </motion.button>
             </div>
 
             {/* Sidebar Info */}
             <div className="space-y-6">
               {/* Quick Stats */}
-              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                <h3 className="text-lg font-semibold mb-4">Quick Info</h3>
+              <div className="bg-black/40 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+                <h3 className="text-lg font-semibold mb-4 text-white">Quick Info</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <MapPin size={16} className="text-blue-400" />
@@ -247,7 +311,7 @@ export default function MonumentPage() {
               </div>
 
               {/* Safety Info */}
-              <div className="bg-green-500/20 backdrop-blur-sm rounded-xl p-6 border border-green-500/30">
+              <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-xl rounded-xl p-6 border border-green-500/30">
                 <h3 className="text-lg font-semibold mb-4 text-green-300">Safety Score</h3>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-400 mb-2">{monument.safetyScore}%</div>
@@ -257,8 +321,8 @@ export default function MonumentPage() {
               </div>
 
               {/* Visit Info */}
-              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                <h3 className="text-lg font-semibold mb-4">Visit Details</h3>
+              <div className="bg-black/40 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+                <h3 className="text-lg font-semibold mb-4 text-white">Visit Details</h3>
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-gray-400 mb-1">Entry Fee</p>
