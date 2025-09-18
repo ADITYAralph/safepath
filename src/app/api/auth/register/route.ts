@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 
 // In a real app, you'd use a database. For demo, we'll use in-memory storage
-let users: Array<{
+const users: Array<{
   id: string
   name: string
   email: string

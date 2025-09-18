@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 
 // Same users array as in register (in real app, use database)
-let users: Array<{
+const users: Array<{
   id: string
   name: string
   email: string

@@ -7,7 +7,7 @@ import { LoadingScreen } from '@/components/UI/LoadingScreen'
 import { DriverBooking } from '@/components/DriverBooking'
 import { MonumentSidebar } from '@/components/MonumentSidebar'
 import { useGeofence } from '@/hooks/useGeofence'
-import { MapPin, Shield, AlertTriangle, Menu, X, Activity, Users, Camera, Zap, Navigation, Car, Building } from 'lucide-react'
+import { Shield, AlertTriangle, Menu, X, Activity, Navigation, LogOut } from 'lucide-react'
 
 // Your real safety data with hotspots for geofencing
 const YOUR_SAFETY_DATA = {
