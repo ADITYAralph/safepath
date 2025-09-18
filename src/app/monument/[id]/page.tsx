@@ -8,10 +8,10 @@ import Image from 'next/image'
 
 // Dynamic background doodles for each monument
 const monumentBackgrounds = {
-  '1': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1920&h=1080&fit=crop&crop=center&auto=format&q=30', // Red Fort doodle pattern
-  '2': 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=1920&h=1080&fit=crop&crop=center&auto=format&q=30', // Lotus Temple doodle pattern  
-  '3': 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=1920&h=1080&fit=crop&crop=center&auto=format&q=30', // India Gate doodle pattern
-  '4': 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?w=1920&h=1080&fit=crop&crop=center&auto=format&q=30'  // Qutub Minar doodle pattern
+  '1': 'https://www.vecteezy.com/vector-art/24327102-indian-flag-flying-in-red-fort', // Red Fort doodle pattern
+  '2': 'https://dragoart.com/tut/how-to-draw-the-lotus-temple-lotus-temple-16067', // Lotus Temple doodle pattern  
+  '3': 'https://www.incredibleindia.gov.in/en/delhi/delhi/india-gate', // India Gate doodle pattern
+  '4': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.bhavyaholidays.com%2Fblogs%2Fqutub-minar-monuments-delhi%2F&psig=AOvVaw1zLU9oGoZ9mQHUn40pNp_2&ust=1758268862176000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCMjb5ovs4Y8DFQAAAAAdAAAAABAL'  // Qutub Minar doodle pattern
 }
 
 // High-quality monument photos
@@ -23,7 +23,7 @@ const monumentData: { [key: string]: any } = {
     distance: '2.3 km',
     rating: 4.8,
     visitors: '12k',
-    image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=1200&h=800&fit=crop&crop=center&auto=format&q=85',
+    image: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Funsplash.com%2Fs%2Fphotos%2Fred-fort&psig=AOvVaw0EbG725JsBhC5IhI2ODaAj&ust=1758268963400000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCNiO47ns4Y8DFQAAAAAdAAAAABAE',
     description: 'The Red Fort is a historic fortified palace of the Mughal emperors that served as the main residence of the Mughal Emperors for nearly 200 years.',
     history: 'Built in 1648 by the fifth Mughal Emperor Shah Jahan, the Red Fort served as the main residence of the Mughal dynasty for nearly 200 years.',
     timings: '9:30 AM - 4:30 PM (Closed on Mondays)',
