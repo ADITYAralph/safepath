@@ -219,9 +219,12 @@ const CrowdAnimation = () => (
   </div>
 );
 
-export default function MonumentPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function MonumentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const monument = monumentData.find(m => m.id === id);
+  
+  // rest of your existing code...
+
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('history');
 
