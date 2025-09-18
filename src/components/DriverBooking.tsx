@@ -7,7 +7,7 @@ import { Car, User, Star, Phone, X, Clock } from 'lucide-react'
 const availableDrivers = [
   {
     id: '1',
-    name: 'Rajesh Kumar',
+    name: 'Ranchhod Das Chhanchad',
     rating: 4.9,
     trips: 1250,
     carModel: 'Toyota Innova',
@@ -18,7 +18,7 @@ const availableDrivers = [
   },
   {
     id: '2',
-    name: 'Mohammed Ali',
+    name: 'Raju Rastogi',
     rating: 4.8,
     trips: 980,
     carModel: 'Maruti Ertiga',
