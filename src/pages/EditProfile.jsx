@@ -1,23 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import './EditProfile.css';
 
 const EditProfile = () => {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
-    name: 'Aditya Kaushik',
-    email: 'aditya@safepath.com',
-    phone: '+91 98765 43210',
-    location: 'New Delhi, India',
-    emergencyContact: '+91 98765 43211',
-    emergencyContactName: 'Parent/Guardian',
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    emergencyContact: '',
+    emergencyContactName: '',
     bloodGroup: 'O+',
     medicalInfo: '',
     profilePicture: '/api/placeholder/100/100',
-    nationality: 'Indian',
+    nationality: '',
     passportNumber: '',
-    dateOfBirth: '1995-05-15'
+    dateOfBirth: ''
   });
 
   const [isEditing, setIsEditing] = useState(false);
+
+  // Load user data when component mounts
+  useEffect(() => {
+    if (user) {
+      setFormData(prevData => ({
+        ...prevData,
+        name: user.displayName || user.email?.split('@')[0] || '',
+        email: user.email || '',
+        profilePicture: user.photoURL || '/api/placeholder/100/100',
+        // Try to load additional data from localStorage or your database
+        ...loadUserProfileData(user.uid)
+      }));
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  // Function to load additional user profile data
+  const loadUserProfileData = (userId) => {
+    // Try to load from localStorage first
+    const savedProfile = localStorage.getItem(`userProfile_${userId}`);
+    if (savedProfile) {
+      try {
+        return JSON.parse(savedProfile);
+      } catch (error) {
+        console.error('Error parsing saved profile:', error);
+      }
+    }
+
+    // Return default values if no saved data
+    return {
+      phone: '',
+      location: '',
+      emergencyContact: '',
+      emergencyContactName: '',
+      nationality: '',
+      dateOfBirth: '',
+      medicalInfo: '',
+      bloodGroup: 'O+'
+    };
+  };
+
+  // Function to save user profile data
+  const saveUserProfileData = (userId, profileData) => {
+    try {
+      localStorage.setItem(`userProfile_${userId}`, JSON.stringify(profileData));
+      // Here you would also save to your backend/database
+      // await saveToDatabase(userId, profileData);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -28,16 +82,56 @@ const EditProfile = () => {
   };
 
   const handleSave = () => {
-    // Save user data to backend
-    console.log('Saving user data:', formData);
+    if (!user) return;
+
+    // Save the profile data
+    const profileDataToSave = {
+      phone: formData.phone,
+      location: formData.location,
+      emergencyContact: formData.emergencyContact,
+      emergencyContactName: formData.emergencyContactName,
+      nationality: formData.nationality,
+      dateOfBirth: formData.dateOfBirth,
+      medicalInfo: formData.medicalInfo,
+      bloodGroup: formData.bloodGroup
+    };
+
+    saveUserProfileData(user.uid, profileDataToSave);
     setIsEditing(false);
     alert('Profile updated successfully! Your changes have been saved.');
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Reset form data if needed
+    // Reload original data
+    if (user) {
+      setFormData(prevData => ({
+        ...prevData,
+        ...loadUserProfileData(user.uid)
+      }));
+    }
   };
+
+  // Show loading state while user data is loading
+  if (isLoading || !user) {
+    return (
+      <div className="edit-profile-container">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '50vh',
+          color: 'white',
+          fontSize: '18px'
+        }}>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            Loading user profile...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="edit-profile-container">
@@ -80,6 +174,11 @@ const EditProfile = () => {
             <span className="status-indicator online"></span>
             <span>Online</span>
           </div>
+          <div style={{ marginTop: '10px', textAlign: 'center' }}>
+            <p style={{ color: '#666', fontSize: '14px' }}>
+              User ID: {user.uid?.substring(0, 8)}...
+            </p>
+          </div>
         </div>
 
         <div className="form-container">
@@ -104,9 +203,12 @@ const EditProfile = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                disabled={!isEditing}
-                className={!isEditing ? 'readonly' : ''}
+                disabled={true} // Email should not be editable
+                className="readonly"
               />
+              <small style={{ color: '#888', fontSize: '12px' }}>
+                Email cannot be changed
+              </small>
             </div>
 
             <div className="form-group">
@@ -118,6 +220,7 @@ const EditProfile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={!isEditing ? 'readonly' : ''}
+                placeholder="Enter your phone number"
               />
             </div>
 
@@ -142,6 +245,7 @@ const EditProfile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={!isEditing ? 'readonly' : ''}
+                placeholder="Enter your nationality"
               />
             </div>
 
@@ -154,6 +258,7 @@ const EditProfile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={!isEditing ? 'readonly' : ''}
+                placeholder="Enter your current location"
               />
             </div>
           </div>
@@ -169,6 +274,7 @@ const EditProfile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={!isEditing ? 'readonly' : ''}
+                placeholder="Enter emergency contact name"
               />
             </div>
 
@@ -181,6 +287,7 @@ const EditProfile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={!isEditing ? 'readonly' : ''}
+                placeholder="Enter emergency contact number"
               />
             </div>
 

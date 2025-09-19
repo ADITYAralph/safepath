@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Settings = () => {
+  const { user } = useAuth();
   const [settings, setSettings] = useState({
     // Privacy & Security
     locationSharing: true,
@@ -31,20 +33,79 @@ const Settings = () => {
 
   const [activeTab, setActiveTab] = useState('privacy');
 
+  // Load user-specific settings when component mounts
+  useEffect(() => {
+    if (user) {
+      loadUserSettings();
+    }
+  }, [user]);
+
+  // Function to load user-specific settings
+  const loadUserSettings = () => {
+    const savedSettings = localStorage.getItem(`userSettings_${user.uid}`);
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(prevSettings => ({ ...prevSettings, ...parsedSettings }));
+      } catch (error) {
+        console.error('Error parsing user settings:', error);
+      }
+    }
+  };
+
+  // Function to save user-specific settings
+  const saveUserSettings = (settingsToSave) => {
+    try {
+      localStorage.setItem(`userSettings_${user.uid}`, JSON.stringify(settingsToSave));
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
+
   const handleSettingChange = (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    saveUserSettings(newSettings); // Auto-save on change
   };
 
   const saveSettings = () => {
-    console.log('Saving settings:', settings);
+    saveUserSettings(settings);
     alert('Settings saved successfully!');
   };
 
   const resetSettings = () => {
     if (window.confirm('Are you sure you want to reset all settings to default?')) {
-      // Reset logic here
+      const defaultSettings = {
+        locationSharing: true,
+        emergencyContactSharing: true,
+        dataCollection: false,
+        biometricAuth: true,
+        twoFactorAuth: false,
+        pushNotifications: true,
+        emergencyAlerts: true,
+        safetyUpdates: true,
+        locationAlerts: true,
+        weatherAlerts: false,
+        autoCheckIn: true,
+        panicButtonSensitivity: 'medium',
+        geoFencingRadius: 500,
+        emergencyAutoCall: true,
+        language: 'en',
+        theme: 'auto',
+        mapProvider: 'google',
+        units: 'metric'
+      };
+      setSettings(defaultSettings);
+      saveUserSettings(defaultSettings);
       alert('Settings reset to default values.');
     }
+  };
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (user?.displayName) return user.displayName;
+    if (user?.email) return user.email.split('@')[0];
+    return 'User';
   };
 
   const TabButton = ({ id, label, icon, isActive, onClick }) => (
@@ -156,6 +217,27 @@ const Settings = () => {
     </div>
   );
 
+  // Show loading if no user
+  if (!user) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: 'white',
+        fontSize: '18px',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+      }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          Loading settings...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -191,7 +273,7 @@ const Settings = () => {
               ⚙️ Settings & Preferences
             </h1>
             <p style={{ margin: 0, color: '#666', fontSize: '1.1rem' }}>
-              Customize your SafePath experience
+              Customize your SafePath experience, {getUserDisplayName()}
             </p>
           </div>
           <button 
@@ -209,6 +291,34 @@ const Settings = () => {
           >
             ← Back to SafePath
           </button>
+        </div>
+
+        {/* User Info Card */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: '20px',
+          padding: '20px',
+          marginBottom: '30px',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '20px'
+        }}>
+          <img 
+            src={user?.photoURL || '/api/placeholder/60/60'} 
+            alt="Profile"
+            style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              border: '3px solid #667eea'
+            }}
+          />
+          <div>
+            <h3 style={{ margin: '0 0 5px 0', color: '#333' }}>{getUserDisplayName()}</h3>
+            <p style={{ margin: '0 0 2px 0', color: '#666', fontSize: '14px' }}>{user?.email}</p>
+            <p style={{ margin: 0, color: '#999', fontSize: '12px' }}>ID: {user?.uid?.substring(0, 12)}...</p>
+          </div>
         </div>
 
         <div style={{
@@ -425,15 +535,18 @@ const Settings = () => {
                   <h4 style={{ margin: '0 0 15px 0' }}>🆘 Emergency Contacts</h4>
                   <div style={{ fontSize: '14px', lineHeight: '1.4' }}>
                     <p style={{ margin: '0 0 10px 0' }}>Current emergency contacts: 3</p>
-                    <button style={{
-                      background: 'rgba(255,255,255,0.2)',
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      color: 'white',
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}>
+                    <button 
+                      onClick={() => window.location.href = '/edit-profile'}
+                      style={{
+                        background: 'rgba(255,255,255,0.2)',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        color: 'white',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
                       Manage Emergency Contacts
                     </button>
                   </div>
@@ -504,16 +617,19 @@ const Settings = () => {
                   flexDirection: 'column',
                   gap: '15px'
                 }}>
-                  <button style={{
-                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '15px 20px',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: '500'
-                  }}>
+                  <button 
+                    onClick={() => window.location.href = '/edit-profile'}
+                    style={{
+                      background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '15px 20px',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      fontWeight: '500'
+                    }}
+                  >
                     📝 Update Profile Information
                   </button>
 
@@ -530,29 +646,58 @@ const Settings = () => {
                     🔑 Change Password
                   </button>
 
-                  <button style={{
-                    background: 'linear-gradient(135deg, #a8edea, #fed6e3)',
-                    color: '#333',
-                    border: 'none',
-                    padding: '15px 20px',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: '500'
-                  }}>
+                  <button 
+                    onClick={() => {
+                      const userData = {
+                        profile: JSON.parse(localStorage.getItem(`userProfile_${user.uid}`) || '{}'),
+                        settings: settings,
+                        stats: JSON.parse(localStorage.getItem(`userStats_${user.uid}`) || '{}'),
+                        activity: JSON.parse(localStorage.getItem(`userActivity_${user.uid}`) || '[]')
+                      };
+                      const blob = new Blob([JSON.stringify(userData, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `safepath-data-${getUserDisplayName()}.json`;
+                      a.click();
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #a8edea, #fed6e3)',
+                      color: '#333',
+                      border: 'none',
+                      padding: '15px 20px',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      fontWeight: '500'
+                    }}
+                  >
                     📊 Download My Data
                   </button>
 
-                  <button style={{
-                    background: 'linear-gradient(135deg, #ff6b6b, #ffa500)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '15px 20px',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: '500'
-                  }}>
+                  <button 
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                        // Clear user data
+                        localStorage.removeItem(`userProfile_${user.uid}`);
+                        localStorage.removeItem(`userSettings_${user.uid}`);
+                        localStorage.removeItem(`userStats_${user.uid}`);
+                        localStorage.removeItem(`userActivity_${user.uid}`);
+                        localStorage.removeItem(`userTickets_${user.uid}`);
+                        alert('Account data cleared. Please contact support to complete account deletion.');
+                      }
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #ff6b6b, #ffa500)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '15px 20px',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      fontWeight: '500'
+                    }}
+                  >
                     🗑️ Delete Account
                   </button>
                 </div>
@@ -565,10 +710,10 @@ const Settings = () => {
                 }}>
                   <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>📋 Account Information</h4>
                   <div style={{ fontSize: '14px', color: '#666', lineHeight: '1.6' }}>
-                    <p><strong>Account Created:</strong> January 15, 2024</p>
-                    <p><strong>Last Login:</strong> Today, 2:30 PM</p>
-                    <p><strong>Digital ID Status:</strong> Verified</p>
-                    <p><strong>Data Storage:</strong> 15.2 MB</p>
+                    <p><strong>Account Created:</strong> {user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'Unknown'}</p>
+                    <p><strong>Last Login:</strong> {user?.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleDateString() : 'Unknown'}</p>
+                    <p><strong>Digital ID Status:</strong> {user?.emailVerified ? 'Verified' : 'Pending Verification'}</p>
+                    <p><strong>User ID:</strong> {user?.uid}</p>
                   </div>
                 </div>
               </div>

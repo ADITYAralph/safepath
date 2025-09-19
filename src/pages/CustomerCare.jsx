@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CustomerCare = () => {
+  const { user } = useAuth();
   const [ticket, setTicket] = useState({
     subject: '',
     message: '',
@@ -10,14 +12,41 @@ const CustomerCare = () => {
 
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState([
-    { sender: 'support', message: 'Hello! How can I help you today?', time: '2:30 PM' }
+    { sender: 'support', message: `Hello ${user?.displayName || user?.email?.split('@')[0] || 'there'}! How can I help you today?`, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
   ]);
   const [newMessage, setNewMessage] = useState('');
 
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (user?.displayName) return user.displayName;
+    if (user?.email) return user.email.split('@')[0];
+    return 'User';
+  };
+
   const handleTicketSubmit = (e) => {
     e.preventDefault();
-    console.log('Submitting ticket:', ticket);
-    alert('Support ticket submitted successfully! You will receive a confirmation email shortly.');
+
+    // Add user info to ticket
+    const ticketWithUserInfo = {
+      ...ticket,
+      userEmail: user?.email,
+      userName: getUserDisplayName(),
+      userId: user?.uid,
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('Submitting ticket:', ticketWithUserInfo);
+
+    // Save ticket to localStorage for this user
+    const existingTickets = JSON.parse(localStorage.getItem(`userTickets_${user?.uid}`) || '[]');
+    existingTickets.unshift({
+      ...ticketWithUserInfo,
+      ticketId: Date.now(),
+      status: 'pending'
+    });
+    localStorage.setItem(`userTickets_${user?.uid}`, JSON.stringify(existingTickets));
+
+    alert(`Support ticket submitted successfully! You will receive a confirmation email at ${user?.email} shortly.`);
     setTicket({ subject: '', message: '', priority: 'medium', category: 'general' });
   };
 
@@ -34,12 +63,33 @@ const CustomerCare = () => {
       setTimeout(() => {
         setChatMessages(prev => [...prev, {
           sender: 'support',
-          message: 'Thank you for your message. A support agent will assist you shortly.',
+          message: `Thank you for your message, ${getUserDisplayName()}. A support agent will assist you shortly.`,
           time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
         }]);
       }, 2000);
     }
   };
+
+  // Show loading if no user
+  if (!user) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: 'white',
+        fontSize: '18px',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+      }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          Loading...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -66,16 +116,21 @@ const CustomerCare = () => {
           borderBottom: '2px solid #f0f0f0',
           paddingBottom: '20px'
         }}>
-          <h1 style={{
-            fontSize: '2.5rem',
-            margin: 0,
-            background: 'linear-gradient(45deg, #667eea, #764ba2)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            fontWeight: 'bold'
-          }}>
-            🎧 Customer Care & Support
-          </h1>
+          <div>
+            <h1 style={{
+              fontSize: '2.5rem',
+              margin: '0 0 10px 0',
+              background: 'linear-gradient(45deg, #667eea, #764ba2)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: 'bold'
+            }}>
+              🎧 Customer Care & Support
+            </h1>
+            <p style={{ margin: 0, color: '#666', fontSize: '1.1rem' }}>
+              Hello {getUserDisplayName()}, we're here to help you with SafePath
+            </p>
+          </div>
           <button 
             onClick={() => window.history.back()}
             style={{
@@ -91,6 +146,35 @@ const CustomerCare = () => {
           >
             ← Back to SafePath
           </button>
+        </div>
+
+        {/* User Info Bar */}
+        <div style={{
+          background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+          borderRadius: '15px',
+          padding: '20px',
+          marginBottom: '30px',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '20px'
+        }}>
+          <img 
+            src={user?.photoURL || '/api/placeholder/50/50'} 
+            alt="Profile"
+            style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: '50%',
+              border: '3px solid white'
+            }}
+          />
+          <div>
+            <h3 style={{ margin: '0 0 5px 0' }}>Account Information</h3>
+            <p style={{ margin: '0 0 2px 0', fontSize: '14px' }}>Name: {getUserDisplayName()}</p>
+            <p style={{ margin: '0 0 2px 0', fontSize: '14px' }}>Email: {user?.email}</p>
+            <p style={{ margin: 0, fontSize: '12px', opacity: 0.8 }}>User ID: {user?.uid?.substring(0, 12)}...</p>
+          </div>
         </div>
 
         {/* Emergency Section */}

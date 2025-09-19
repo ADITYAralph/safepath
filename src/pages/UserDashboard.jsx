@@ -1,30 +1,129 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const UserDashboard = () => {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     safetyScore: 85,
-    placesVisited: 12,
-    safeCheckIns: 48,
-    emergencyContacts: 3,
-    distanceTraveled: 245,
-    alertsSent: 2
+    placesVisited: 0,
+    safeCheckIns: 0,
+    emergencyContacts: 0,
+    distanceTraveled: 0,
+    alertsSent: 0
   });
 
-  const [recentActivity] = useState([
-    { icon: '✅', action: 'Checked in at Red Fort', time: '2 hours ago', status: 'safe' },
-    { icon: '📍', action: 'Entered safe zone: Connaught Place', time: '4 hours ago', status: 'info' },
-    { icon: '🚨', action: 'Emergency contact updated', time: '1 day ago', status: 'warning' },
-    { icon: '🗺️', action: 'Route planned to India Gate', time: '2 days ago', status: 'info' },
-    { icon: '🆔', action: 'Digital ID verified', time: '3 days ago', status: 'success' }
-  ]);
-
+  const [recentActivity, setRecentActivity] = useState([]);
   const [weatherData] = useState({
-    location: 'New Delhi',
+    location: 'Current Location',
     temperature: '28°C',
     condition: 'Partly Cloudy',
     humidity: '65%',
     windSpeed: '12 km/h'
   });
+
+  // Load user-specific data when component mounts
+  useEffect(() => {
+    if (user) {
+      loadUserStats();
+      loadUserActivity();
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  // Function to load user-specific stats
+  const loadUserStats = () => {
+    const savedStats = localStorage.getItem(`userStats_${user.uid}`);
+    if (savedStats) {
+      try {
+        const parsedStats = JSON.parse(savedStats);
+        setStats(prevStats => ({ ...prevStats, ...parsedStats }));
+      } catch (error) {
+        console.error('Error parsing user stats:', error);
+      }
+    } else {
+      // Initialize default stats for new user
+      const defaultStats = {
+        safetyScore: 85,
+        placesVisited: Math.floor(Math.random() * 15) + 1, // Random between 1-15
+        safeCheckIns: Math.floor(Math.random() * 50) + 10, // Random between 10-60
+        emergencyContacts: 3,
+        distanceTraveled: Math.floor(Math.random() * 500) + 50, // Random between 50-550
+        alertsSent: Math.floor(Math.random() * 5) // Random between 0-4
+      };
+      setStats(defaultStats);
+      localStorage.setItem(`userStats_${user.uid}`, JSON.stringify(defaultStats));
+    }
+  };
+
+  // Function to load user-specific activity
+  const loadUserActivity = () => {
+    const savedActivity = localStorage.getItem(`userActivity_${user.uid}`);
+    if (savedActivity) {
+      try {
+        setRecentActivity(JSON.parse(savedActivity));
+      } catch (error) {
+        console.error('Error parsing user activity:', error);
+        setDefaultActivity();
+      }
+    } else {
+      setDefaultActivity();
+    }
+  };
+
+  // Set default activity for new users
+  const setDefaultActivity = () => {
+    const defaultActivity = [
+      { icon: '✅', action: 'Profile created successfully', time: '1 day ago', status: 'success' },
+      { icon: '🆔', action: 'Digital ID verified', time: '1 day ago', status: 'success' },
+      { icon: '🛡️', action: 'Safety features activated', time: '1 day ago', status: 'info' },
+      { icon: '📱', action: 'Welcome to SafePath!', time: '1 day ago', status: 'info' }
+    ];
+    setRecentActivity(defaultActivity);
+    localStorage.setItem(`userActivity_${user.uid}`, JSON.stringify(defaultActivity));
+  };
+
+  // Function to get user display name
+  const getUserDisplayName = () => {
+    if (user?.displayName) return user.displayName;
+    if (user?.email) return user.email.split('@')[0];
+    return 'User';
+  };
+
+  // Function to add new activity (can be called from other parts of the app)
+  const addActivity = (icon, action, status = 'info') => {
+    const newActivity = {
+      icon,
+      action,
+      time: 'Just now',
+      status
+    };
+
+    const updatedActivity = [newActivity, ...recentActivity.slice(0, 9)]; // Keep only last 10
+    setRecentActivity(updatedActivity);
+    localStorage.setItem(`userActivity_${user.uid}`, JSON.stringify(updatedActivity));
+  };
+
+  // Show loading state
+  if (isLoading || !user) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: 'white',
+        fontSize: '18px',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+      }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          Loading dashboard...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -61,7 +160,7 @@ const UserDashboard = () => {
               📊 Personal Dashboard
             </h1>
             <p style={{ margin: 0, color: '#666', fontSize: '1.1rem' }}>
-              Welcome back, Aditya! Here's your SafePath summary
+              Welcome back, {getUserDisplayName()}! Here's your SafePath summary
             </p>
           </div>
           <button 
@@ -245,9 +344,43 @@ const UserDashboard = () => {
           {/* Weather & Quick Actions */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-            {/* Weather Widget */}
+            {/* User Info Widget */}
             <div style={{
               background: 'linear-gradient(135deg, #667eea, #764ba2)',
+              borderRadius: '20px',
+              padding: '25px',
+              color: 'white'
+            }}>
+              <h4 style={{ margin: '0 0 15px 0', fontSize: '1.3rem' }}>
+                👤 User Information
+              </h4>
+              <div style={{ textAlign: 'center' }}>
+                <img 
+                  src={user?.photoURL || '/api/placeholder/60/60'} 
+                  alt="Profile"
+                  style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    marginBottom: '10px',
+                    border: '3px solid white'
+                  }}
+                />
+                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '10px 0' }}>
+                  {getUserDisplayName()}
+                </div>
+                <p style={{ margin: '5px 0', fontSize: '0.9rem', opacity: 0.9 }}>
+                  {user?.email}
+                </p>
+                <p style={{ margin: '5px 0', fontSize: '0.8rem', opacity: 0.7 }}>
+                  ID: {user?.uid?.substring(0, 8)}...
+                </p>
+              </div>
+            </div>
+
+            {/* Weather Widget */}
+            <div style={{
+              background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
               borderRadius: '20px',
               padding: '25px',
               color: 'white'
@@ -289,67 +422,79 @@ const UserDashboard = () => {
               </h4>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button style={{
-                  background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
+                <button 
+                  onClick={() => addActivity('📍', 'Location updated manually')}
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
                   <span>📍</span> Update Current Location
                 </button>
 
-                <button style={{
-                  background: 'linear-gradient(135deg, #ff6b6b, #ffa500)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
+                <button 
+                  onClick={() => addActivity('🚨', 'Panic button tested successfully', 'safe')}
+                  style={{
+                    background: 'linear-gradient(135deg, #ff6b6b, #ffa500)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
                   <span>🚨</span> Test Panic Button
                 </button>
 
-                <button style={{
-                  background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
+                <button 
+                  onClick={() => addActivity('📤', 'Travel itinerary shared with contacts')}
+                  style={{
+                    background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
                   <span>📤</span> Share Itinerary
                 </button>
 
-                <button style={{
-                  background: 'linear-gradient(135deg, #a8edea, #fed6e3)',
-                  color: '#333',
-                  border: 'none',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
+                <button 
+                  onClick={() => window.location.href = '/edit-profile'}
+                  style={{
+                    background: 'linear-gradient(135deg, #a8edea, #fed6e3)',
+                    color: '#333',
+                    border: 'none',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
                   <span>👥</span> Emergency Contacts
                 </button>
               </div>
