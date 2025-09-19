@@ -24,3 +24,133 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ===========================================
+   LEAFLET FONT & STYLING OVERRIDE - Global Fix
+   =========================================== */
+
+/* Override all Leaflet routing machine text to match site fonts */
+.leaflet-routing-container,
+.leaflet-routing-container * {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  color: var(--foreground) !important;
+}
+
+/* Hide the routing instructions panel completely */
+.leaflet-routing-container {
+  display: none !important;
+}
+
+/* Override routing control styles */
+.leaflet-routing-control {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Style routing waypoint markers if they appear */
+.leaflet-routing-marker {
+  display: none !important;
+}
+
+/* Override any Leaflet popup fonts to match your site */
+.leaflet-popup-content,
+.leaflet-popup-content * {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  color: var(--foreground) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--background) !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Override Leaflet tooltip fonts */
+.leaflet-tooltip {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 12px !important;
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 4px !important;
+}
+
+/* Override attribution text */
+.leaflet-control-attribution {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 11px !important;
+  opacity: 0.7 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #6b7280 !important;
+}
+
+/* Hide routing alternatives */
+.leaflet-routing-alternatives-container {
+  display: none !important;
+}
+
+/* Clean up routing geocoder if it appears */
+.leaflet-routing-geocoder {
+  display: none !important;
+}
+
+/* Style route line to match your brand colors */
+.leaflet-interactive {
+  stroke: #3B82F6 !important;
+  stroke-width: 4 !important;
+  stroke-opacity: 0.8 !important;
+}
+
+/* Dark mode support for Leaflet elements */
+@media (prefers-color-scheme: dark) {
+  .leaflet-popup-content,
+  .leaflet-popup-content * {
+    color: var(--foreground) !important;
+  }
+  
+  .leaflet-popup-content-wrapper {
+    background: var(--background) !important;
+    border-color: #374151 !important;
+  }
+  
+  .leaflet-tooltip {
+    background: var(--background) !important;
+    color: var(--foreground) !important;
+    border-color: #4b5563 !important;
+  }
+  
+  .leaflet-control-attribution {
+    background: rgba(10, 10, 10, 0.9) !important;
+    color: #9ca3af !important;
+  }
+}
+
+/* Override zoom control buttons */
+.leaflet-control-zoom a {
+  font-family: Arial, Helvetica, sans-serif !important;
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #f3f4f6 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .leaflet-control-zoom a {
+    background: var(--background) !important;
+    color: var(--foreground) !important;
+    border-color: #4b5563 !important;
+  }
+  
+  .leaflet-control-zoom a:hover {
+    background: #1f2937 !important;
+  }
+}

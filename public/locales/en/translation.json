@@ -1,0 +1,13 @@
+{
+  "welcome": "Welcome to SafePath",
+  "digitalId": "Digital Tourist ID",
+  "dashboard": "Dashboard",
+  "safetyScore": "Safety Score",
+  "panicButton": "Emergency Panic Button",
+  "alertSent": "Alert Sent!",
+  "securedByBlockchain": "Secured by Blockchain",
+  "enterHighRisk": "WARNING: You are entering a high-risk area!",
+  "generateId": "Generate Digital ID",
+  "itinerary": "Trip Itinerary",
+  "emergencyContacts": "Emergency Contacts"
+}

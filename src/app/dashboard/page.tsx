@@ -2,202 +2,237 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { SafetyMap } from '@/components/Map/SafetyMap'
-import { DriverBooking } from '@/components/DriverBooking'
-import { MonumentSidebar } from '@/components/MonumentSidebar'
-import { AlertTriangle, Navigation, Shield, LogOut } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { SafetyScore } from '@/components/SafetyScore'
+import { PanicButton } from '@/components/PanicButton'
+import { BlockchainBadge } from '@/components/BlockchainBadge'
+import { LanguageSelector } from '@/components/LanguageSelector'
+import { Shield, MapPin, Bell, User, LogOut, AlertTriangle } from 'lucide-react'
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const router = useRouter()
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [userInfo, setUserInfo] = useState<{ name: string; email: string } | null>(null)
-  const [isARMode, setIsARMode] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
+  const [touristData, setTouristData] = useState<any>(null)
+  const [currentLocation, setCurrentLocation] = useState<{lat: number, lng: number} | null>(null)
+  const [geoFenceAlert, setGeoFenceAlert] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true)
-
-    // Check authentication only on client-side
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('safepath_token')
-      if (!token) {
-        router.push('/signin')
-        return
-      }
-
-      // Get user info safely
-      try {
-        const savedUser = localStorage.getItem('safepath_user')
-        if (savedUser) {
-          setUserInfo(JSON.parse(savedUser))
-        }
-      } catch (error) {
-        console.error('Error parsing user data:', error)
-      }
+    // Check authentication
+    const isAuthenticated = localStorage.getItem('tourist_authenticated')
+    if (!isAuthenticated) {
+      router.push('/digital-id')
+      return
     }
 
-    // Get location
-    if (typeof window !== 'undefined' && navigator.geolocation) {
+    // Load tourist data
+    const storedData = localStorage.getItem('tourist_digital_id')
+    if (storedData) {
+      setTouristData(JSON.parse(storedData))
+    }
+
+    // Get current location
+    if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setLocation({
+          const location = {
             lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          })
+            lng: position.coords.longitude
+          }
+          setCurrentLocation(location)
+          
+          // Check geo-fence (simulate high-risk area check)
+          checkGeoFence(location)
         },
         (error) => {
-          console.error('Location error:', error)
-          // Fallback location (Mumbai)
-          setLocation({ lat: 19.0760, lng: 72.8777 })
+          console.error('Location access denied:', error)
         }
       )
-    } else {
-      setLocation({ lat: 19.0760, lng: 72.8777 })
     }
   }, [router])
 
-  const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.clear()
-      router.push('/signin')
+  const checkGeoFence = (location: {lat: number, lng: number}) => {
+    // Simulate geo-fence check - you can replace with actual geo-fencing logic
+    const highRiskZones = [
+      { lat: 28.7041, lng: 77.1025, radius: 1000 }, // Example: Delhi area
+    ]
+    
+    // Simple distance check (for demo)
+    const isInHighRisk = highRiskZones.some(zone => {
+      const distance = getDistance(location, zone)
+      return distance < zone.radius
+    })
+    
+    if (isInHighRisk && !geoFenceAlert) {
+      setGeoFenceAlert(true)
+      alert(t('enterHighRisk'))
     }
   }
 
-  // Don't render until mounted to prevent SSR issues
-  if (!isMounted || !location) {
+  const getDistance = (pos1: {lat: number, lng: number}, pos2: {lat: number, lng: number}) => {
+    // Haversine formula for distance calculation
+    const R = 6371e3 // metres
+    const φ1 = pos1.lat * Math.PI/180
+    const φ2 = pos2.lat * Math.PI/180
+    const Δφ = (pos2.lat-pos1.lat) * Math.PI/180
+    const Δλ = (pos2.lng-pos1.lng) * Math.PI/180
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+
+    return R * c // in metres
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('tourist_authenticated')
+    localStorage.removeItem('tourist_digital_id')
+    router.push('/')
+  }
+
+  if (!touristData) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center bg-black/50 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
-          />
-          <h2 className="text-xl font-bold text-white mb-4">Setting Up SafePath</h2>
-          <p className="text-gray-300">Loading your dashboard...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/20">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
-              <Shield className="text-white" size={20} />
+      <header className="bg-white shadow-lg">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                <Shield size={20} className="text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">SafePath</h1>
+                <p className="text-sm text-gray-600">Smart Tourist Safety System</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">SafePath</h1>
-              <p className="text-xs text-gray-300">Welcome, {userInfo?.name || 'User'}!</p>
+            
+            <div className="flex items-center gap-4">
+              <LanguageSelector />
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-red-600 hover:text-red-700 transition"
+              >
+                <LogOut size={16} />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
             </div>
           </div>
-          
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition"
-          >
-            <LogOut size={16} />
-            <span>Sign Out</span>
-          </button>
         </div>
       </header>
 
-      {/* Monument Sidebar */}
-      <MonumentSidebar />
+      {/* Geo-fence Alert */}
+      {geoFenceAlert && (
+        <div className="bg-red-100 border-l-4 border-red-500 p-4">
+          <div className="flex items-center">
+            <AlertTriangle className="text-red-500 mr-3" size={20} />
+            <p className="text-red-700 font-semibold">{t('enterHighRisk')}</p>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
-      <main className="h-screen pt-20">
-        <div className="flex h-full">
-          {/* Map Section - Adjusted for sidebar */}
-          <div className="w-full md:w-7/12 relative md:ml-80">
-            <SafetyMap 
-              userLocation={location}
-              onToggleAR={() => setIsARMode(!isARMode)}
-              isARMode={isARMode}
-            />
-            
-            {/* Safety Stats Panel */}
-            <div className="absolute bottom-6 left-6 bg-black/60 backdrop-blur-xl rounded-xl p-4 border border-white/20 text-white w-64">
-              <h3 className="font-semibold mb-3">Live Safety Metrics</h3>
-              <div className="grid grid-cols-2 gap-4 text-center text-sm">
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Tourist Info */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+              <div className="flex items-center gap-3 mb-4">
+                <User className="text-blue-600" size={24} />
+                <h2 className="text-xl font-bold">Tourist Profile</h2>
+              </div>
+              
+              <div className="space-y-3">
                 <div>
-                  <div className="text-2xl font-bold text-green-400">87%</div>
-                  <div>Safety Score</div>
+                  <span className="font-semibold">Name:</span> {touristData.name}
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">15</div>
-                  <div>CCTV Active</div>
+                  <span className="font-semibold">ID:</span> 
+                  <span className="font-mono text-xs ml-2">{touristData.id}</span>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-orange-400">4</div>
-                  <div>Incidents</div>
+                  <span className="font-semibold">Valid Until:</span> {new Date(touristData.validUntil).toLocaleDateString()}
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-purple-400">1.2k</div>
-                  <div>People</div>
+                  <span className="font-semibold">Status:</span> 
+                  <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span>
                 </div>
               </div>
+              
+              <div className="mt-4">
+                <BlockchainBadge />
+              </div>
             </div>
+
+            {/* Current Location */}
+            {currentLocation && (
+              <div className="bg-white rounded-2xl shadow-lg p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <MapPin className="text-green-600" size={24} />
+                  <h2 className="text-xl font-bold">Current Location</h2>
+                </div>
+                
+                <div className="space-y-2">
+                  <div>
+                    <span className="font-semibold">Latitude:</span> {currentLocation.lat.toFixed(6)}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Longitude:</span> {currentLocation.lng.toFixed(6)}
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-green-600 font-semibold">Live Tracking Active</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Info Section - Desktop Only */}
-          <div className="hidden md:flex w-5/12 p-12 bg-gradient-to-br from-gray-900/90 via-black to-blue-900/90 flex-col justify-center">
-            <h1 className="text-5xl font-bold text-white mb-6">SafePath</h1>
-            <p className="text-lg text-gray-300 mb-8">
-              Your AI-powered tourist safety companion by <span className="text-blue-400 font-semibold">CodeBlooded</span>. Stay safe, explore confidently.
-            </p>
+          {/* Right Column - Safety Features */}
+          <div className="lg:col-span-2">
+            <SafetyScore />
+            <PanicButton touristId={touristData.id} />
             
-            <div className="space-y-4">
-              <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-white mb-2">🛡️ Real-time Safety</h3>
-                <p className="text-gray-300">AI-powered risk assessment and live incident tracking</p>
+            {/* Additional Features */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                  <Bell className="text-blue-500" size={20} />
+                  Smart Alerts
+                </h3>
+                <p className="text-gray-600 text-sm mb-3">
+                  Get notified when entering high-risk areas or when anomalous behavior is detected.
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-green-600">Active</span>
+                </div>
               </div>
               
-              <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-white mb-2">🚗 Smart Transportation</h3>
-                <p className="text-gray-300">Verified drivers and safe travel options</p>
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                  <Shield className="text-purple-500" size={20} />
+                  AI Protection
+                </h3>
+                <p className="text-gray-600 text-sm mb-3">
+                  Advanced AI monitors your travel patterns for unusual activity.
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-green-600">Monitoring</span>
+                </div>
               </div>
-              
-              <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-white mb-2">🏛️ Tourism Guide</h3>
-                <p className="text-gray-300">Discover monuments with AR experiences</p>
-              </div>
-            </div>
-
-            <div className="mt-8 p-4 bg-green-500/20 rounded-lg border border-green-500/30">
-              <p className="text-sm text-green-200">
-                📍 <strong>Your Location:</strong> {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-              </p>
-              <p className="text-xs text-green-300 mt-1">SafePath is actively monitoring your safety</p>
             </div>
           </div>
         </div>
       </main>
-
-      {/* Driver Booking Component */}
-      <DriverBooking />
-
-      {/* SOS Button */}
-      <button
-        onClick={() => {
-          const message = `🚨 EMERGENCY ALERT!\n\nUser: ${userInfo?.name || 'Unknown'}\nEmail: ${userInfo?.email || 'Unknown'}\nLocation: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}\n\nEmergency services notified!`
-          alert(message)
-        }}
-        className="fixed bottom-20 right-6 bg-red-600 p-5 rounded-full text-white shadow-lg hover:bg-red-700 transition z-50"
-      >
-        <AlertTriangle size={24} />
-      </button>
-
-      {/* GPS Indicator */}
-      <div className="fixed bottom-6 right-6 bg-black/60 backdrop-blur-xl rounded-full px-3 py-2 text-white flex items-center gap-2">
-        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-        <Navigation size={16} />
-        <span>Live GPS</span>
-      </div>
     </div>
   )
 }
