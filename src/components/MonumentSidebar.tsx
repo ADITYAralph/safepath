@@ -124,6 +124,8 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
 
       <style jsx>{`
         .monument-sidebar {
+
+        
           position: fixed;
           left: 0;
           top: 80px;

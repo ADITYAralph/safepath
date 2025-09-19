@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Shield, Smartphone, Users, AlertTriangle, Eye, MapPin, Globe, LogOut } from 'lucide-react'
+import { Shield, Smartphone, Users, AlertTriangle, Eye, MapPin, Globe } from 'lucide-react'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { MonumentSidebar } from '@/components/MonumentSidebar'
 import { MonumentDetail } from '@/components/MonumentDetail'
@@ -10,6 +10,7 @@ import { LiveMap } from '@/components/LiveMap'
 import { MonumentSlideshow } from '@/components/MonumentSlideshow'
 import { useAuth } from '@/contexts/AuthContext'
 import { Monument } from '@/data/monuments'
+import UserProfile from '../components/UserProfile'
 
 export default function HomePage() {
   const router = useRouter()
@@ -32,20 +33,34 @@ export default function HomePage() {
     }
   }, [])
 
-  const handleLogout = async () => {
-    try {
-      await logout()
-    } catch (error) {
-      console.error('Logout failed:', error)
-    }
-  }
-
   const handleMonumentSelect = (monument: Monument) => {
     setSelectedMonument(monument)
   }
 
   const closeMonumentDetail = () => {
     setSelectedMonument(null)
+  }
+
+  // Get user display name with fallback
+  const getUserDisplayName = () => {
+    if (user?.displayName) return user.displayName
+    if (user?.email) return user.email.split('@')[0]
+    return 'User'
+  }
+
+  // Get user profile picture with fallback
+  const getUserProfilePic = () => {
+    if (user?.photoURL) return user.photoURL
+    return '/api/placeholder/40/40' // Fallback placeholder
+  }
+
+  // Create user object for UserProfile component
+  const userProfileData = {
+    name: getUserDisplayName(),
+    profilePic: getUserProfilePic(),
+    email: user?.email || '',
+    uid: user?.uid || '',
+    emailVerified: user?.emailVerified || false
   }
 
   // Loading Screen Component
@@ -145,16 +160,14 @@ export default function HomePage() {
           <div className="flex items-center gap-4">
             <div className="hidden md:block text-right">
               <p className="text-sm text-white/80">Welcome back,</p>
-              <p className="font-semibold text-white">{user?.displayName || user?.email}</p>
+              <p className="font-semibold text-white">{getUserDisplayName()}</p>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="bg-red-500/80 backdrop-blur-md hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 border border-red-400/30"
-            >
-              <LogOut size={16} />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
+            {/* REPLACE THE LOGOUT BUTTON WITH USER PROFILE COMPONENT */}
+            <UserProfile 
+              user={userProfileData}
+              onLogout={logout}
+            />
           </div>
         </div>
       </header>
@@ -192,7 +205,7 @@ export default function HomePage() {
                   Advanced AI-powered platform ensuring tourist safety with blockchain-based digital IDs, 
                   real-time monitoring, geo-fencing alerts, and emergency response system.
                 </p>
-                
+
                 <div className="flex gap-8 justify-center mb-20">
                   <button
                     onClick={() => router.push('/digital-id')}
@@ -201,7 +214,7 @@ export default function HomePage() {
                   >
                     Get Digital Tourist ID
                   </button>
-                  
+
                   <button
                     onClick={() => router.push('/dashboard/authority')}
                     className="border-3 border-white/40 bg-white/10 backdrop-blur-md text-white px-12 py-6 rounded-2xl font-bold text-2xl hover:bg-white/20 transition-all transform hover:scale-105 shadow-lg animate-slideUp"
