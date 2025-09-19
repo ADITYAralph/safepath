@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Monument } from '@/data/monuments'
 import { MapPin, Clock, Star, Phone, Navigation, Calendar, DollarSign, Camera, Route } from 'lucide-react'
 import { NavigationMap } from './NavigationMap'
+import { LiveLocationMap } from '@/components/LiveLocationMap'
 
 interface MonumentDetailProps {
   monument: Monument
@@ -12,6 +13,28 @@ interface MonumentDetailProps {
 
 export function MonumentDetail({ monument, onClose }: MonumentDetailProps) {
   const [showNavigationMap, setShowNavigationMap] = useState(false)
+
+  // Get monument coordinates - you'll need to add these to your Monument type or data
+  const getMonumentCoordinates = (monument: Monument) => {
+    // You'll need to add coordinates to your monuments data
+    // For now, I'm using some example coordinates for popular monuments
+    const monumentCoordinates: { [key: string]: { lat: number; lng: number } } = {
+      'Taj Mahal': { lat: 27.1751, lng: 78.0421 },
+      'Red Fort': { lat: 28.6562, lng: 77.2410 },
+      'Qutub Minar': { lat: 28.5245, lng: 77.1855 },
+      'Gateway of India': { lat: 18.9220, lng: 72.8347 },
+      'Hawa Mahal': { lat: 26.9239, lng: 75.8267 },
+      'Mysore Palace': { lat: 12.3051, lng: 76.6551 },
+      'Victoria Memorial': { lat: 22.5448, lng: 88.3426 },
+      'Charminar': { lat: 17.3616, lng: 78.4747 },
+      'India Gate': { lat: 28.6129, lng: 77.2295 },
+      'Amber Fort': { lat: 26.9855, lng: 75.8513 }
+    }
+    
+    return monumentCoordinates[monument.name] || { lat: 28.6139, lng: 77.2090 } // Default to Delhi
+  }
+
+  const monumentLocation = getMonumentCoordinates(monument)
 
   return (
     <div className="monument-detail-overlay">
@@ -86,6 +109,19 @@ export function MonumentDetail({ monument, onClose }: MonumentDetailProps) {
             </div>
           </div>
 
+          {/* REAL GPS LOCATION MAP SECTION - FIXED! */}
+          <section className="content-section">
+            <h2>🌍 Live Location & Navigation</h2>
+            <p>Get real-time GPS directions to {monument.name} using your current location:</p>
+            <div className="live-map-container">
+              <LiveLocationMap 
+                monumentLocation={monumentLocation}
+                monumentName={monument.name}
+                showRoute={true}
+              />
+            </div>
+          </section>
+
           {/* Description Section */}
           <section className="content-section">
             <h2>About {monument.name}</h2>
@@ -122,13 +158,13 @@ export function MonumentDetail({ monument, onClose }: MonumentDetailProps) {
               </div>
             </div>
             
-            {/* NEW: View on Map Button */}
+            {/* Alternative Navigation Button */}
             <button 
               onClick={() => setShowNavigationMap(true)}
-              className="view-on-map-btn"
+              className="view-on-map-btn secondary"
             >
               <Route size={18} />
-              <span>View on Map & Get Directions</span>
+              <span>Alternative Map View</span>
               <MapPin size={16} />
             </button>
           </section>
@@ -140,6 +176,7 @@ export function MonumentDetail({ monument, onClose }: MonumentDetailProps) {
               <p><strong>Address:</strong> {monument.location_details.address}</p>
               <p><strong>Nearest Railway Station:</strong> {monument.location_details.nearestStation}</p>
               <p><strong>Nearest Airport:</strong> {monument.location_details.nearestAirport}</p>
+              <p><strong>Coordinates:</strong> {monumentLocation.lat.toFixed(4)}°N, {monumentLocation.lng.toFixed(4)}°E</p>
             </div>
           </section>
 
@@ -188,7 +225,7 @@ export function MonumentDetail({ monument, onClose }: MonumentDetailProps) {
         </div>
       </div>
 
-      {/* Navigation Map Modal - NEW */}
+      {/* Navigation Map Modal - EXISTING */}
       {showNavigationMap && (
         <NavigationMap 
           monument={monument}
@@ -345,6 +382,15 @@ export function MonumentDetail({ monument, onClose }: MonumentDetailProps) {
           margin-bottom: 16px;
         }
 
+        /* Live Map Container Styles */
+        .live-map-container {
+          margin-top: 20px;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+          border: 1px solid #e5e7eb;
+        }
+
         .travel-options {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -363,7 +409,6 @@ export function MonumentDetail({ monument, onClose }: MonumentDetailProps) {
           margin-bottom: 8px;
         }
 
-        /* NEW: View on Map Button Styles */
         .view-on-map-btn {
           width: 100%;
           display: flex;
@@ -371,22 +416,37 @@ export function MonumentDetail({ monument, onClose }: MonumentDetailProps) {
           justify-content: center;
           gap: 12px;
           padding: 16px 24px;
-          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-          color: white;
           border: none;
           border-radius: 12px;
           font-size: 16px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
           margin-top: 24px;
         }
 
-        .view-on-map-btn:hover {
+        .view-on-map-btn:not(.secondary) {
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+          color: white;
+          box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .view-on-map-btn:not(.secondary):hover {
           background: linear-gradient(135deg, #2563eb, #1e40af);
           transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .view-on-map-btn.secondary {
+          background: linear-gradient(135deg, #6b7280, #4b5563);
+          color: white;
+          box-shadow: 0 4px 16px rgba(107, 114, 128, 0.3);
+        }
+
+        .view-on-map-btn.secondary:hover {
+          background: linear-gradient(135deg, #4b5563, #374151);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(107, 114, 128, 0.4);
         }
 
         .view-on-map-btn:active {
