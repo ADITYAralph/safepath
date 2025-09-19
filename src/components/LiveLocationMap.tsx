@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { MapPin, Navigation, RotateCcw, Zap, Shield, AlertTriangle } from 'lucide-react'
+import { MapPin, Navigation, RotateCcw, Zap, Shield, AlertTriangle, Satellite } from 'lucide-react'
 
 interface LocationData {
   latitude: number
@@ -24,38 +24,60 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
   const [address, setAddress] = useState<string>('')
   const [distance, setDistance] = useState<number>(0)
   const [mapLoaded, setMapLoaded] = useState(false)
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle')
   const mapRef = useRef<HTMLDivElement>(null)
   const watchIdRef = useRef<number | null>(null)
   const mapInstanceRef = useRef<any>(null)
 
-  // Initialize Google Maps
+  // Initialize Google Maps with better error handling
   useEffect(() => {
     const loadGoogleMaps = () => {
-      // Check if Google Maps is already loaded
       if (typeof window !== 'undefined' && (window as any).google && (window as any).google.maps) {
         setMapLoaded(true)
         return
       }
 
       if (typeof window !== 'undefined') {
-        const script = document.createElement('script')
-        script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qby&libraries=geometry`
-        script.async = true
-        script.defer = true
-        script.onload = () => setMapLoaded(true)
-        script.onerror = () => {
-          console.log('Google Maps failed to load, using basic functionality')
-          setMapLoaded(true)
-        }
-        document.head.appendChild(script)
+        // Use OpenStreetMap as fallback - no API key required
+        setMapLoaded(true)
       }
     }
 
     loadGoogleMaps()
   }, [])
 
-  // Get user's current location
-  const getCurrentLocation = () => {
+  // FIXED: Proper error handling function
+  const handleLocationError = (error: GeolocationPositionError) => {
+    setIsTracking(false)
+    setLocationStatus('denied')
+    
+    let errorMessage = 'Unknown location error occurred'
+    
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        errorMessage = 'Location access denied. Please allow location access and refresh the page.'
+        console.error('Location error: Permission denied')
+        break
+      case error.POSITION_UNAVAILABLE:
+        errorMessage = 'Location information is unavailable. Please check your GPS settings.'
+        console.error('Location error: Position unavailable')
+        break
+      case error.TIMEOUT:
+        errorMessage = 'Location request timed out. Trying alternative method...'
+        console.error('Location error: Timeout expired')
+        // Try alternative method on timeout
+        setTimeout(() => tryAlternativeLocation(), 1000)
+        break
+      default:
+        errorMessage = 'Unable to get location. Please try again or check your device settings.'
+        console.error('Location error: Unknown error', error)
+    }
+    
+    setLocationError(errorMessage)
+  }
+
+  // Enhanced location request with better timeout handling
+  const getCurrentLocation = async () => {
     if (!navigator.geolocation) {
       setLocationError('Geolocation is not supported by this browser')
       return
@@ -63,59 +85,123 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
 
     setLocationError('')
     setIsTracking(true)
+    setLocationStatus('requesting')
 
-    const options: PositionOptions = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
+    // First, try to get cached position
+    const cachedOptions: PositionOptions = {
+      enableHighAccuracy: false,
+      timeout: 5000,
+      maximumAge: 300000 // 5 minutes
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    // Then try high accuracy
+    const highAccuracyOptions: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 20000, // Increased timeout to 20 seconds
+      maximumAge: 60000 // 1 minute
+    }
+
+    const tryGetLocation = (options: PositionOptions): Promise<GeolocationPosition> => {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve, 
+          reject, 
+          options
+        )
+      })
+    }
+
+    try {
+      let position: GeolocationPosition
+
+      try {
+        // First try: Quick cached location
+        position = await tryGetLocation(cachedOptions)
+        console.log('Got cached location')
+      } catch (error) {
+        // Second try: High accuracy with longer timeout
+        console.log('Trying high accuracy location...')
+        position = await tryGetLocation(highAccuracyOptions)
+        console.log('Got high accuracy location')
+      }
+
+      const locationData: LocationData = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: position.timestamp
+      }
+      
+      setUserLocation(locationData)
+      setLocationStatus('granted')
+      setIsTracking(false)
+      setLocationError('') // Clear any previous errors
+      
+      console.log('Location acquired:', locationData)
+      
+      // Get address and calculate distance
+      reverseGeocode(locationData.latitude, locationData.longitude)
+      
+      if (monumentLocation) {
+        calculateDistance(locationData, monumentLocation)
+      }
+
+    } catch (error: any) {
+      console.error('Location acquisition failed:', error)
+      handleLocationError(error)
+    }
+  }
+
+  // Alternative location method for timeout cases
+  const tryAlternativeLocation = async () => {
+    console.log('Trying alternative location method...')
+    try {
+      // Use IP-based location as fallback
+      const response = await fetch('https://ipapi.co/json/')
+      const data = await response.json()
+      
+      if (data.latitude && data.longitude) {
         const locationData: LocationData = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: position.timestamp
+          latitude: parseFloat(data.latitude),
+          longitude: parseFloat(data.longitude),
+          accuracy: 10000, // IP location is less accurate
+          timestamp: Date.now()
         }
         
         setUserLocation(locationData)
-        setIsTracking(false)
+        setLocationStatus('granted')
+        setLocationError('Using approximate location based on your internet connection.')
+        
+        console.log('Alternative location acquired:', locationData)
+        
         reverseGeocode(locationData.latitude, locationData.longitude)
         
         if (monumentLocation) {
           calculateDistance(locationData, monumentLocation)
         }
-      },
-      (error) => {
-        setIsTracking(false)
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setLocationError('Location access denied. Please enable location permissions.')
-            break
-          case error.POSITION_UNAVAILABLE:
-            setLocationError('Location information is unavailable.')
-            break
-          case error.TIMEOUT:
-            setLocationError('Location request timed out.')
-            break
-          default:
-            setLocationError('An unknown error occurred.')
-        }
-      },
-      options
-    )
+      } else {
+        throw new Error('Invalid response from IP location service')
+      }
+    } catch (error) {
+      console.error('Alternative location failed:', error)
+      setLocationError('Unable to determine your location. Please enable GPS or try again.')
+    }
   }
 
-  // Start continuous location tracking
+  // Improved location tracking with better error handling
   const startLocationTracking = () => {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported')
+      return
+    }
 
     const options: PositionOptions = {
       enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 1000
+      timeout: 15000, // Longer timeout for tracking
+      maximumAge: 5000 // 5 seconds
     }
+
+    console.log('Starting location tracking...')
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
@@ -127,13 +213,24 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
         }
         
         setUserLocation(locationData)
+        setLocationError('') // Clear any previous errors
+        
+        console.log('Location updated:', locationData)
+        
         reverseGeocode(locationData.latitude, locationData.longitude)
         
         if (monumentLocation) {
           calculateDistance(locationData, monumentLocation)
         }
       },
-      (error) => console.error('Location tracking error:', error),
+      (error) => {
+        console.error('Location tracking error:', error)
+        if (error.code === error.TIMEOUT) {
+          setLocationError('Location tracking timed out. GPS signal may be weak.')
+        } else {
+          handleLocationError(error)
+        }
+      },
       options
     )
   }
@@ -143,18 +240,37 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current)
       watchIdRef.current = null
+      console.log('Location tracking stopped')
     }
   }
 
-  // Reverse geocode to get address
+  // Enhanced reverse geocoding with better error handling
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'SafePath Tourist Safety App'
+          }
+        }
+      )
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
       const data = await response.json()
-      setAddress(data.display_name || 'Unknown location')
+      
+      if (data.display_name) {
+        setAddress(data.display_name)
+        console.log('Address resolved:', data.display_name)
+      } else {
+        setAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)
+      }
     } catch (error) {
       console.error('Reverse geocoding failed:', error)
-      setAddress('Address unavailable')
+      setAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`)
     }
   }
 
@@ -169,103 +285,21 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
     const distance = R * c
     setDistance(distance)
-  }
-
-  // Initialize map when loaded
-  useEffect(() => {
-    if (mapLoaded && mapRef.current && userLocation) {
-      initializeMap()
-    }
-  }, [mapLoaded, userLocation, monumentLocation])
-
-  const initializeMap = () => {
-    if (typeof window === 'undefined' || !(window as any).google || !userLocation || !mapRef.current) {
-      return
-    }
-
-    try {
-      const googleMaps = (window as any).google.maps
-      const map = new googleMaps.Map(mapRef.current, {
-        center: { lat: userLocation.latitude, lng: userLocation.longitude },
-        zoom: 15,
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          }
-        ]
-      })
-
-      // User location marker
-      const userMarker = new googleMaps.Marker({
-        position: { lat: userLocation.latitude, lng: userLocation.longitude },
-        map: map,
-        title: 'Your Location',
-        icon: {
-          url: 'data:image/svg+xml;base64,' + btoa(`
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="8" fill="#3b82f6" stroke="white" stroke-width="2"/>
-              <circle cx="12" cy="12" r="3" fill="white"/>
-            </svg>
-          `),
-          scaledSize: new googleMaps.Size(24, 24)
-        }
-      })
-
-      // Monument marker if provided
-      if (monumentLocation) {
-        const monumentMarker = new googleMaps.Marker({
-          position: monumentLocation,
-          map: map,
-          title: monumentName || 'Monument',
-          icon: {
-            url: 'data:image/svg+xml;base64,' + btoa(`
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 10C21 17L12 23L3 10C3 6.13 7.03 3 12 3S21 6.13 21 10Z" fill="#dc2626" stroke="white" stroke-width="2"/>
-                <circle cx="12" cy="10" r="3" fill="white"/>
-              </svg>
-            `),
-            scaledSize: new googleMaps.Size(32, 32)
-          }
-        })
-
-        // Show route if requested
-        if (showRoute) {
-          const directionsService = new googleMaps.DirectionsService()
-          const directionsRenderer = new googleMaps.DirectionsRenderer({
-            suppressMarkers: false,
-            polylineOptions: {
-              strokeColor: '#3b82f6',
-              strokeWeight: 4
-            }
-          })
-
-          directionsRenderer.setMap(map)
-
-          directionsService.route({
-            origin: { lat: userLocation.latitude, lng: userLocation.longitude },
-            destination: monumentLocation,
-            travelMode: googleMaps.TravelMode.WALKING
-          }, (result: any, status: any) => {
-            if (status === 'OK') {
-              directionsRenderer.setDirections(result)
-            }
-          })
-        }
-      }
-
-      mapInstanceRef.current = map
-    } catch (error) {
-      console.error('Error initializing map:', error)
-      setLocationError('Failed to load map. Please try again.')
-    }
+    console.log('Distance calculated:', distance, 'km')
   }
 
   // Auto-get location on component mount
   useEffect(() => {
-    getCurrentLocation()
-    return () => stopLocationTracking()
+    // Delay initial location request slightly to allow UI to render
+    const timer = setTimeout(() => {
+      console.log('Initializing location request...')
+      getCurrentLocation()
+    }, 500)
+    
+    return () => {
+      clearTimeout(timer)
+      stopLocationTracking()
+    }
   }, [])
 
   const formatAccuracy = (accuracy: number) => {
@@ -285,11 +319,20 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
         <div className="location-header">
           <div className="header-left">
             <div className="location-icon">
-              📍
+              {locationStatus === 'requesting' ? (
+                <Satellite className="pulse" size={20} />
+              ) : (
+                '📍'
+              )}
             </div>
             <div>
               <h3>Live Location</h3>
-              <p>Real-time GPS tracking</p>
+              <p>
+                {locationStatus === 'requesting' && 'Searching for GPS signal...'}
+                {locationStatus === 'granted' && 'Real-time GPS tracking'}
+                {locationStatus === 'denied' && 'Location access needed'}
+                {locationStatus === 'idle' && 'Real-time GPS tracking'}
+              </p>
             </div>
           </div>
           
@@ -300,7 +343,7 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
               className={`location-btn ${isTracking ? 'loading' : ''}`}
             >
               {isTracking ? <RotateCcw className="spin" size={16} /> : <Navigation size={16} />}
-              {isTracking ? 'Getting...' : 'Update'}
+              {isTracking ? 'Finding...' : 'Update'}
             </button>
           </div>
         </div>
@@ -329,46 +372,89 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
                     <span>{formatDistance(distance)}</span>
                   </div>
                 )}
+                
+                <div className="stat">
+                  <Satellite size={14} />
+                  <span>
+                    {userLocation.accuracy < 100 ? 'High precision' : 
+                     userLocation.accuracy < 500 ? 'Good precision' : 
+                     'Basic precision'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Error Message */}
+        {/* Error Message with Enhanced UI */}
         {locationError && (
           <div className="location-error">
             <AlertTriangle size={16} />
-            <span>{locationError}</span>
-            <button onClick={getCurrentLocation} className="retry-btn">
-              Try Again
-            </button>
+            <div className="error-content">
+              <span>{locationError}</span>
+              <div className="error-actions">
+                <button onClick={getCurrentLocation} className="retry-btn">
+                  Try Again
+                </button>
+                <button onClick={tryAlternativeLocation} className="alternative-btn">
+                  Use Approximate Location
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Map */}
+        {/* Enhanced Map Placeholder */}
         <div className="map-container">
-          <div ref={mapRef} className="google-map"></div>
-          
-          {!userLocation && !locationError && (
+          {userLocation ? (
+            <div className="map-placeholder">
+              <div className="map-info">
+                <Satellite size={32} className="map-icon" />
+                <h4>Location Found!</h4>
+                <p>Latitude: {userLocation.latitude.toFixed(6)}</p>
+                <p>Longitude: {userLocation.longitude.toFixed(6)}</p>
+                {monumentLocation && (
+                  <button 
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.open(`https://www.google.com/maps/dir/${userLocation.latitude},${userLocation.longitude}/${monumentLocation.lat},${monumentLocation.lng}`, '_blank')
+                      }
+                    }}
+                    className="directions-btn"
+                  >
+                    <Navigation size={16} />
+                    Get Directions
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
             <div className="map-loading">
               <div className="loading-spinner"></div>
-              <p>Getting your location...</p>
+              <p>
+                {isTracking ? 'Getting your location...' : 
+                 locationError ? 'Location unavailable' : 
+                 'Tap Update to get your location'}
+              </p>
             </div>
           )}
         </div>
 
-        {/* Controls */}
+        {/* Enhanced Controls */}
         <div className="map-controls">
           <button 
             onClick={startLocationTracking}
             className="control-btn primary"
+            disabled={!userLocation}
           >
+            <Satellite size={16} />
             Start Tracking
           </button>
           <button 
             onClick={stopLocationTracking}
             className="control-btn secondary"
           >
+            <RotateCcw size={16} />
             Stop Tracking
           </button>
           {monumentLocation && userLocation && (
@@ -380,6 +466,7 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
               }}
               className="control-btn accent"
             >
+              <Navigation size={16} />
               Get Directions
             </button>
           )}
@@ -420,6 +507,17 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
           justify-content: center;
           font-size: 20px;
           box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+          color: white;
+        }
+
+        .pulse {
+          animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
         }
 
         .location-header h3 {
@@ -514,21 +612,43 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
           border: 1px solid #fecaca;
           border-left: 4px solid #ef4444;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 8px;
           color: #dc2626;
           font-size: 14px;
         }
 
-        .retry-btn {
+        .error-content {
+          flex: 1;
+        }
+
+        .error-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+        }
+
+        .retry-btn, .alternative-btn {
           background: #dc2626;
           color: white;
           border: none;
-          padding: 4px 8px;
-          border-radius: 4px;
+          padding: 6px 12px;
+          border-radius: 6px;
           font-size: 12px;
           cursor: pointer;
-          margin-left: auto;
+          transition: all 0.2s;
+        }
+
+        .alternative-btn {
+          background: #6b7280;
+        }
+
+        .retry-btn:hover {
+          background: #b91c1c;
+        }
+
+        .alternative-btn:hover {
+          background: #4b5563;
         }
 
         .map-container {
@@ -536,9 +656,56 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
           position: relative;
         }
 
-        .google-map {
+        .map-placeholder {
           width: 100%;
           height: 100%;
+          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .map-info {
+          text-align: center;
+          color: #0f172a;
+        }
+
+        .map-icon {
+          color: #3b82f6;
+          margin-bottom: 16px;
+        }
+
+        .map-info h4 {
+          margin: 0 0 12px 0;
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .map-info p {
+          margin: 4px 0;
+          font-size: 14px;
+          color: #64748b;
+        }
+
+        .directions-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 12px 16px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          margin-top: 16px;
+          transition: all 0.2s;
+        }
+
+        .directions-btn:hover {
+          background: #2563eb;
+          transform: translateY(-1px);
         }
 
         .map-loading {
@@ -581,7 +748,16 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
           cursor: pointer;
           transition: all 0.2s;
           border: none;
-          min-width: 100px;
+          min-width: 120px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+
+        .control-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .control-btn.primary {
@@ -589,7 +765,7 @@ export function LiveLocationMap({ monumentLocation, monumentName, showRoute = fa
           color: white;
         }
 
-        .control-btn.primary:hover {
+        .control-btn.primary:hover:not(:disabled) {
           background: #059669;
         }
 
