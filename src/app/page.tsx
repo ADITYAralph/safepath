@@ -6,12 +6,11 @@ import { Shield, Smartphone, Users, AlertTriangle, Eye, MapPin, Globe } from 'lu
 import { AuthModal } from '@/components/auth/AuthModal'
 import { MonumentSidebar } from '@/components/MonumentSidebar'
 import { MonumentDetail } from '@/components/MonumentDetail'
-import { LiveMap } from '@/components/LiveMap'
 import { MonumentSlideshow } from '@/components/MonumentSlideshow'
 import { useAuth } from '@/contexts/AuthContext'
 import { Monument } from '@/data/monuments'
 import UserProfile from '../components/UserProfile'
-import GeofencingModal from '../components/GeofencingModal' // ✅ Your existing import
+import GeofencingModal from '../components/GeofencingModal'
 
 export default function HomePage() {
   const router = useRouter()
@@ -19,7 +18,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [animationPhase, setAnimationPhase] = useState(0)
   const [selectedMonument, setSelectedMonument] = useState<Monument | null>(null)
-  const [isGeofencingOpen, setIsGeofencingOpen] = useState(false) // ✅ Your existing state
+  const [isGeofencingOpen, setIsGeofencingOpen] = useState(false)
 
   useEffect(() => {
     const timer1 = setTimeout(() => setAnimationPhase(1), 500)
@@ -43,7 +42,6 @@ export default function HomePage() {
     setSelectedMonument(null)
   }
 
-  // ✅ Your existing function
   const handleGeofencingClick = () => {
     setIsGeofencingOpen(true)
   }
@@ -149,7 +147,7 @@ export default function HomePage() {
       {/* MONUMENT BACKGROUND SLIDESHOW (unchanged) */}
       <MonumentSlideshow />
 
-      {/* Fixed Header (unchanged) */}
+      {/* Header (unchanged) */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full px-6 py-4 bg-black/20 backdrop-blur-xl shadow-lg border-b border-white/10 animate-slideDown">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
@@ -162,7 +160,18 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Header with Map Button + Profile */}
           <div className="flex items-center gap-4">
+            {/* Live Map Button */}
+            <button
+              onClick={handleGeofencingClick}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600/90 to-green-700/90 backdrop-blur-md text-white rounded-xl font-medium transition-all transform hover:scale-105 shadow-lg hover:shadow-xl border border-green-500/30"
+              title="Open Live Geofencing Map"
+            >
+              <MapPin size={18} />
+              <span className="hidden sm:block">Live Map</span>
+            </button>
+
             <div className="hidden md:block text-right">
               <p className="text-sm text-white/80">Welcome back,</p>
               <p className="font-semibold text-white">{getUserDisplayName()}</p>
@@ -190,16 +199,13 @@ export default function HomePage() {
         />
       )}
 
-      {/* Live Map (unchanged) */}
-      <LiveMap apiKey="AIzaSyCDQmLZczM7ClvdRqpjb3rYr0RK-Iea_jc" />
-
-      {/* ✅ Your existing Geofencing Modal */}
+      {/* Geofencing Modal (unchanged) */}
       <GeofencingModal 
         isOpen={isGeofencingOpen}
         onClose={() => setIsGeofencingOpen(false)}
       />
 
-      {/* CENTERED MAIN CONTENT */}
+      {/* CENTERED MAIN CONTENT (unchanged) */}
       <main className="w-full px-8 pt-24 relative z-10">
         <div className="max-w-none mx-auto relative">
           <div className={`transition-all duration-300 ${selectedMonument ? 'pr-80' : ''}`}>
@@ -235,7 +241,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* ✅ Features Grid - CORRECTED MAPPING */}
+              {/* Features Grid (unchanged) */}
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10 mb-20">
                 {[
                   { 
@@ -258,7 +264,7 @@ export default function HomePage() {
                     title: 'Geo-Fencing', 
                     desc: 'Smart alerts when entering high-risk zones with real-time location monitoring and safety scoring.', 
                     delay: '0.3s',
-                    isClickable: true // ✅ Add identifier for clickable tile
+                    isClickable: true
                   },
                   { 
                     icon: Eye, 
@@ -288,7 +294,7 @@ export default function HomePage() {
                       feature.isClickable ? 'cursor-pointer ring-1 ring-green-400/30 hover:ring-green-400/50' : ''
                     }`} 
                     style={{animationDelay: feature.delay}}
-                    onClick={feature.isClickable ? handleGeofencingClick : undefined} // ✅ Properly handle click
+                    onClick={feature.isClickable ? handleGeofencingClick : undefined}
                   >
                     <div className={`w-24 h-24 bg-${feature.color}-100/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-8 border border-white/20`}>
                       <feature.icon className={`text-${feature.color}-300`} size={48} />
@@ -296,7 +302,6 @@ export default function HomePage() {
                     <h3 className="text-2xl font-bold text-white mb-6 drop-shadow-lg">{feature.title}</h3>
                     <p className="text-white/90 text-lg leading-relaxed drop-shadow-md">{feature.desc}</p>
                     
-                    {/* ✅ Show click indicator only for Geo-Fencing */}
                     {feature.isClickable && (
                       <div className="mt-4">
                         <span className="text-sm bg-white/20 px-3 py-1 rounded-full text-white/80">

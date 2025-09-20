@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { X, Shield, MapPin, AlertTriangle, Eye, EyeOff, Search, AlertCircle } from 'lucide-react'
+import GoBackButton from './GoBackButton' // ✅ NEW: Import Go Back Button
 
 // Fallback data in case import fails
 const REAL_INDIA_TOURIST_ZONES = [
@@ -464,15 +465,40 @@ export default function GeofencingModal({ isOpen, onClose }: GeofencingModalProp
     }
   }, [])
 
+  // Handle modal background click
+  const handleModalClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-7xl h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-4">
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={handleModalClick}
+    >
+      <div 
+        className="bg-white rounded-2xl w-full max-w-7xl h-[90vh] overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ✅ UPDATED Header with Go Back Button */}
+        <div 
+          className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
+              {/* ✅ NEW: Go Back Button */}
+              <GoBackButton
+                variant="header"
+                onClick={onClose}
+                label="Back"
+                className="mr-2"
+                hideOnHomePage={false} // Always show in modal
+              />
+              
               <Shield size={28} />
               <div>
                 <h2 className="text-xl font-bold">SafePath Live Geofencing</h2>

@@ -124,8 +124,6 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
 
       <style jsx>{`
         .monument-sidebar {
-
-        
           position: fixed;
           left: 0;
           top: 80px;
@@ -190,7 +188,7 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
         .header-title {
           font-size: 18px;
           font-weight: 700;
-          color: #1f2937;
+          color: #171f29ff;
           margin-bottom: 12px;
           white-space: nowrap;
         }
@@ -212,9 +210,9 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
         .search-input {
           width: 100%;
           padding: 8px 12px 8px 40px;
-          border: 1px solid #d1d5db;
+          border: 1px solid #0f1215ff;
           border-radius: 8px;
-          font-size: 14px;
+          font-size: 14px;color: #000000ff;
           transition: all 0.2s ease;
         }
 
@@ -227,9 +225,9 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
         .state-filter {
           width: 100%;
           padding: 8px 12px;
-          border: 1px solid #d1d5db;
+          border: 1px solid #0f1215ff;
           border-radius: 8px;
-          font-size: 14px;
+          font-size: 14px;color: #000000ff;
           background: white;
           transition: all 0.2s ease;
         }
@@ -283,8 +281,9 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
           transform: translateX(4px);
         }
 
+        /* ✅ FIXED: Monument doodle/emoji container - ONLY THIS CHANGED */
         .monument-doodle {
-          font-size: 32px;
+          font-size: 24px; /* ✅ Optimized size */
           margin-right: 12px;
           display: flex;
           align-items: center;
@@ -294,6 +293,12 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
           background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
           border-radius: 50%;
           flex-shrink: 0;
+          /* ✅ FIXED: Prevent icon cutting */
+          overflow: visible;
+          line-height: 1;
+          text-align: center;
+          /* ✅ Ensure proper emoji rendering */
+          font-family: system-ui, -apple-system, sans-serif;
         }
 
         .monument-info {
@@ -328,7 +333,7 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
           display: flex;
           align-items: center;
           gap: 4px;
-          color: #6b7280;
+          color: #1f2227ff;
           font-size: 12px;
           margin-bottom: 6px;
         }
