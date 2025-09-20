@@ -11,6 +11,7 @@ import { MonumentSlideshow } from '@/components/MonumentSlideshow'
 import { useAuth } from '@/contexts/AuthContext'
 import { Monument } from '@/data/monuments'
 import UserProfile from '../components/UserProfile'
+import GeofencingModal from '../components/GeofencingModal' // ✅ Your existing import
 
 export default function HomePage() {
   const router = useRouter()
@@ -18,6 +19,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [animationPhase, setAnimationPhase] = useState(0)
   const [selectedMonument, setSelectedMonument] = useState<Monument | null>(null)
+  const [isGeofencingOpen, setIsGeofencingOpen] = useState(false) // ✅ Your existing state
 
   useEffect(() => {
     const timer1 = setTimeout(() => setAnimationPhase(1), 500)
@@ -41,6 +43,11 @@ export default function HomePage() {
     setSelectedMonument(null)
   }
 
+  // ✅ Your existing function
+  const handleGeofencingClick = () => {
+    setIsGeofencingOpen(true)
+  }
+
   // Get user display name with fallback
   const getUserDisplayName = () => {
     if (user?.displayName) return user.displayName
@@ -51,7 +58,7 @@ export default function HomePage() {
   // Get user profile picture with fallback
   const getUserProfilePic = () => {
     if (user?.photoURL) return user.photoURL
-    return '/api/placeholder/40/40' // Fallback placeholder
+    return '/api/placeholder/40/40'
   }
 
   // Create user object for UserProfile component
@@ -63,7 +70,7 @@ export default function HomePage() {
     emailVerified: user?.emailVerified || false
   }
 
-  // Loading Screen Component
+  // Loading Screen Component (unchanged)
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 flex items-center justify-center overflow-hidden">
@@ -80,7 +87,6 @@ export default function HomePage() {
           <div className={`flex items-center gap-4 justify-center mb-4 transition-all duration-800 ${
             animationPhase >= 1 ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'
           }`}>
-            {/* Logo */}
             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-2xl">
               <span className="text-3xl">🛡️</span>
             </div>
@@ -120,12 +126,12 @@ export default function HomePage() {
     )
   }
 
-  // Show authentication modal if user is not authenticated
+  // Show authentication modal if user is not authenticated (unchanged)
   if (!authLoading && !user) {
     return <AuthModal />
   }
 
-  // Show loading if auth is still loading
+  // Show loading if auth is still loading (unchanged)
   if (authLoading) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 flex items-center justify-center">
@@ -140,14 +146,13 @@ export default function HomePage() {
   // Main Website Content
   return (
     <div className="min-h-screen w-full overflow-x-hidden relative animate-fadeIn">
-      {/* MONUMENT BACKGROUND SLIDESHOW */}
+      {/* MONUMENT BACKGROUND SLIDESHOW (unchanged) */}
       <MonumentSlideshow />
 
-      {/* Fixed Header */}
+      {/* Fixed Header (unchanged) */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full px-6 py-4 bg-black/20 backdrop-blur-xl shadow-lg border-b border-white/10 animate-slideDown">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
-            {/* Logo */}
             <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg bg-white/10 backdrop-blur-md border border-white/20">
               <span className="text-2xl">🛡️</span>
             </div>
@@ -163,7 +168,6 @@ export default function HomePage() {
               <p className="font-semibold text-white">{getUserDisplayName()}</p>
             </div>
 
-            {/* REPLACE THE LOGOUT BUTTON WITH USER PROFILE COMPONENT */}
             <UserProfile 
               user={userProfileData}
               onLogout={logout}
@@ -172,13 +176,13 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Monument Sidebar */}
+      {/* Monument Sidebar (unchanged) */}
       <MonumentSidebar 
         onMonumentSelect={handleMonumentSelect}
         selectedMonument={selectedMonument}
       />
 
-      {/* Monument Detail */}
+      {/* Monument Detail (unchanged) */}
       {selectedMonument && (
         <MonumentDetail 
           monument={selectedMonument}
@@ -186,10 +190,16 @@ export default function HomePage() {
         />
       )}
 
-      {/* Live Map */}
+      {/* Live Map (unchanged) */}
       <LiveMap apiKey="AIzaSyCDQmLZczM7ClvdRqpjb3rYr0RK-Iea_jc" />
 
-      {/* CENTERED MAIN CONTENT - FIXED */}
+      {/* ✅ Your existing Geofencing Modal */}
+      <GeofencingModal 
+        isOpen={isGeofencingOpen}
+        onClose={() => setIsGeofencingOpen(false)}
+      />
+
+      {/* CENTERED MAIN CONTENT */}
       <main className="w-full px-8 pt-24 relative z-10">
         <div className="max-w-none mx-auto relative">
           <div className={`transition-all duration-300 ${selectedMonument ? 'pr-80' : ''}`}>
@@ -225,27 +235,80 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Features Grid */}
+              {/* ✅ Features Grid - CORRECTED MAPPING */}
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10 mb-20">
                 {[
-                  { icon: Shield, color: 'blue', title: 'Blockchain Digital ID', desc: 'Secure, tamper-proof digital identification for tourists with KYC verification and blockchain storage.', delay: '0.1s' },
-                  { icon: AlertTriangle, color: 'red', title: 'Panic Button', desc: 'One-tap emergency alert system with live location sharing to police and emergency contacts.', delay: '0.2s' },
-                  { icon: MapPin, color: 'green', title: 'Geo-Fencing', desc: 'Smart alerts when entering high-risk zones with real-time location monitoring and safety scoring.', delay: '0.3s' },
-                  { icon: Eye, color: 'purple', title: 'AI Anomaly Detection', desc: 'Advanced AI monitors travel patterns to detect unusual behavior and potential safety issues.', delay: '0.4s' },
-                  { icon: Users, color: 'yellow', title: 'Authority Dashboard', desc: 'Real-time monitoring dashboard for police and tourism departments with incident management.', delay: '0.5s' },
-                  { icon: Smartphone, color: 'indigo', title: 'Multilingual Support', desc: 'Available in 10+ Indian languages with voice/text emergency access for all users.', delay: '0.6s' }
+                  { 
+                    icon: Shield, 
+                    color: 'blue', 
+                    title: 'Blockchain Digital ID', 
+                    desc: 'Secure, tamper-proof digital identification for tourists with KYC verification and blockchain storage.', 
+                    delay: '0.1s' 
+                  },
+                  { 
+                    icon: AlertTriangle, 
+                    color: 'red', 
+                    title: 'Panic Button', 
+                    desc: 'One-tap emergency alert system with live location sharing to police and emergency contacts.', 
+                    delay: '0.2s' 
+                  },
+                  { 
+                    icon: MapPin, 
+                    color: 'green', 
+                    title: 'Geo-Fencing', 
+                    desc: 'Smart alerts when entering high-risk zones with real-time location monitoring and safety scoring.', 
+                    delay: '0.3s',
+                    isClickable: true // ✅ Add identifier for clickable tile
+                  },
+                  { 
+                    icon: Eye, 
+                    color: 'purple', 
+                    title: 'AI Anomaly Detection', 
+                    desc: 'Advanced AI monitors travel patterns to detect unusual behavior and potential safety issues.', 
+                    delay: '0.4s' 
+                  },
+                  { 
+                    icon: Users, 
+                    color: 'yellow', 
+                    title: 'Authority Dashboard', 
+                    desc: 'Real-time monitoring dashboard for police and tourism departments with incident management.', 
+                    delay: '0.5s' 
+                  },
+                  { 
+                    icon: Smartphone, 
+                    color: 'indigo', 
+                    title: 'Multilingual Support', 
+                    desc: 'Available in 10+ Indian languages with voice/text emergency access for all users.', 
+                    delay: '0.6s' 
+                  }
                 ].map((feature, index) => (
-                  <div key={index} className={`bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl p-12 text-center transform hover:scale-105 transition-all duration-300 animate-slideUp border border-white/20 hover:bg-white/15`} style={{animationDelay: feature.delay}}>
+                  <div 
+                    key={index} 
+                    className={`bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl p-12 text-center transform hover:scale-105 transition-all duration-300 animate-slideUp border border-white/20 hover:bg-white/15 ${
+                      feature.isClickable ? 'cursor-pointer ring-1 ring-green-400/30 hover:ring-green-400/50' : ''
+                    }`} 
+                    style={{animationDelay: feature.delay}}
+                    onClick={feature.isClickable ? handleGeofencingClick : undefined} // ✅ Properly handle click
+                  >
                     <div className={`w-24 h-24 bg-${feature.color}-100/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-8 border border-white/20`}>
                       <feature.icon className={`text-${feature.color}-300`} size={48} />
                     </div>
                     <h3 className="text-2xl font-bold text-white mb-6 drop-shadow-lg">{feature.title}</h3>
                     <p className="text-white/90 text-lg leading-relaxed drop-shadow-md">{feature.desc}</p>
+                    
+                    {/* ✅ Show click indicator only for Geo-Fencing */}
+                    {feature.isClickable && (
+                      <div className="mt-4">
+                        <span className="text-sm bg-white/20 px-3 py-1 rounded-full text-white/80">
+                          Click to explore →
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
-              {/* Large CTA Section */}
+              {/* Large CTA Section (unchanged) */}
               <div className="bg-gradient-to-r from-blue-600/80 via-purple-600/80 to-indigo-600/80 backdrop-blur-md rounded-3xl p-16 text-center text-white shadow-2xl animate-slideUp border border-white/20" style={{animationDelay: '0.8s'}}>
                 <h2 className="text-5xl font-bold mb-6 drop-shadow-lg">Ready to Travel Safely?</h2>
                 <p className="text-2xl mb-12 opacity-90 max-w-3xl mx-auto drop-shadow-md">
@@ -263,7 +326,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Footer (unchanged) */}
       <footer className="relative z-10 bg-black/40 backdrop-blur-xl text-white py-12 animate-slideUp border-t border-white/10" style={{animationDelay: '1s'}}>
         <div className="max-w-7xl mx-auto px-8 text-center">
           <div className="flex items-center justify-center gap-4 mb-6">

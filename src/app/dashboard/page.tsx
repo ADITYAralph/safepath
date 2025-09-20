@@ -9,12 +9,19 @@ import { BlockchainBadge } from '@/components/BlockchainBadge'
 import { LanguageSelector } from '@/components/LanguageSelector'
 import { Shield, MapPin, Bell, User, LogOut, AlertTriangle } from 'lucide-react'
 
+// ADD: Import the new geofencing modal
+import AllIndiaGeofencingModal from '@/components/AllIndiaGeofencingModal'
+
 export default function Dashboard() {
   const { t } = useTranslation()
   const router = useRouter()
   const [touristData, setTouristData] = useState<any>(null)
   const [currentLocation, setCurrentLocation] = useState<{lat: number, lng: number} | null>(null)
   const [geoFenceAlert, setGeoFenceAlert] = useState(false)
+
+  // ADD: New states for All India geofencing
+  const [showGeofencing, setShowGeofencing] = useState(false)
+  const [useAllIndiaMode, setUseAllIndiaMode] = useState(false)
 
   useEffect(() => {
     // Check authentication
@@ -115,6 +122,18 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center gap-4">
+              {/* ADD: All India Mode Toggle */}
+              <button
+                onClick={() => setUseAllIndiaMode(!useAllIndiaMode)}
+                className={`px-3 py-2 rounded-full text-xs font-bold transition ${
+                  useAllIndiaMode 
+                    ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {useAllIndiaMode ? '🇮🇳 All India' : '📍 Local'} Mode
+              </button>
+
               <LanguageSelector />
               <button
                 onClick={handleLogout}
@@ -200,8 +219,8 @@ export default function Dashboard() {
             <SafetyScore />
             <PanicButton touristId={touristData.id} />
             
-            {/* Additional Features */}
-            <div className="grid md:grid-cols-2 gap-6">
+            {/* Additional Features - MODIFIED: Changed to 3 columns */}
+            <div className="grid md:grid-cols-3 gap-6">
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
                   <Bell className="text-blue-500" size={20} />
@@ -229,10 +248,38 @@ export default function Dashboard() {
                   <span className="text-sm text-green-600">Monitoring</span>
                 </div>
               </div>
+
+              {/* NEW: Add All India Geofencing tile */}
+              <div 
+                className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-shadow"
+                onClick={() => setShowGeofencing(true)}
+              >
+                <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                  <MapPin className="text-green-500" size={20} />
+                  {useAllIndiaMode ? '🇮🇳 Monument Zones' : '📍 Local Zones'}
+                </h3>
+                <p className="text-gray-600 text-sm mb-3">
+                  {useAllIndiaMode 
+                    ? 'Monitor 37+ cities across India with 100+ monument zones'
+                    : 'Track local safety zones and geofencing alerts'
+                  }
+                </p>
+                <button className="text-sm text-blue-600 font-semibold hover:text-blue-700">
+                  Click to explore →
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </main>
+
+      {/* ADD: All India Geofencing Modal */}
+      {showGeofencing && (
+        <AllIndiaGeofencingModal 
+          isOpen={showGeofencing} 
+          onClose={() => setShowGeofencing(false)} 
+        />
+      )}
     </div>
   )
 }
