@@ -140,7 +140,7 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
         }
 
         .monument-sidebar.collapsed {
-          width: 64px;
+          width: 80px;
         }
 
         .monument-sidebar.expanded {
@@ -158,11 +158,12 @@ export function MonumentSidebar({ onMonumentSelect, selectedMonument }: Monument
 
         .sidebar-icon {
           font-size: 24px;
-          width: 40px;
-          height: 40px;
+          width: 48px;
+          height: 48px;
           display: flex;
           align-items: center;
           justify-content: center;
+          margin:auto;
           background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
           border-radius: 10px;
           flex-shrink: 0;

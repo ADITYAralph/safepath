@@ -9,27 +9,27 @@ const monumentImages = [
     location: 'Agra, India'
   },
   {
-    url: 'https://images.unsplash.com/photo-1587135941948-670b381f08ce?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+    url: 'https://as2.ftcdn.net/v2/jpg/03/62/28/37/1000_F_362283704_93qXOialKYbG3zQdT2tbDCbMLweZc3rb.jpg',
     name: 'India Gate',
     location: 'New Delhi, India'
   },
   {
-    url: 'https://images.unsplash.com/photo-1609920658906-8223bd289001?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-    name: 'Red Fort',
-    location: 'Delhi, India'
+    url: 'https://images.unsplash.com/photo-1607836046730-3317bd58a31b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aGltYWNoYWwlMjBwcmFkZXNoJTIwaW5kaWF8ZW58MHx8MHx8fDA%3D',
+    name: 'Mountains',
+    location: 'Himachal, India'
   },
   {
-    url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+    url: 'https://thumbs.dreamstime.com/b/hawa-mahal-palace-jaipur-rajasthan-winds-36197345.jpg',
     name: 'Hawa Mahal',
     location: 'Jaipur, Rajasthan'
   },
   {
-    url: 'https://images.unsplash.com/photo-1571804375915-5dc2ef1a7dd5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+    url: 'https://t3.ftcdn.net/jpg/02/00/55/94/360_F_200559473_wEDZgxSDPPjQfgX3sQqXcjz4ph1a79Yt.jpg',
     name: 'Gateway of India',
     location: 'Mumbai, Maharashtra'
   },
   {
-    url: 'https://images.unsplash.com/photo-1585298723682-88e5d4d82f57?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+    url: 'https://karnatakatourism.org/wp-content/uploads/2020/12/mysuru-palace.jpg',
     name: 'Mysore Palace',
     location: 'Mysore, Karnataka'
   }
@@ -71,7 +71,7 @@ export function MonumentSlideshow() {
             />
             
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-purple-900/60 to-indigo-900/70" />
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-gray-900/80 to-blue-900/90" />
             
             {/* Dot Pattern Overlay */}
             <div className="absolute inset-0 opacity-10" 
