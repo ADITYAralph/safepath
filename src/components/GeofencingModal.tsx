@@ -526,14 +526,14 @@ export default function GeofencingModal({ isOpen, onClose }: GeofencingModalProp
                   placeholder="Search monuments, cities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 outline-none"
+                  className="flex-1 outline-none text-white placeholder:text-[#808080]"
                 />
               </div>
               
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as any)}
-                className="bg-white rounded-lg shadow-lg px-3 py-2 outline-none"
+                className="bg-white rounded-lg shadow-lg px-3 py-2 outline-none text-[#808080]"
               >
                 <option value="all">All Zones</option>
                 <option value="safe">Safe Zones</option>
@@ -594,7 +594,7 @@ export default function GeofencingModal({ isOpen, onClose }: GeofencingModalProp
                   <div className={`w-3 h-3 rounded-full ${
                     isMonitoring ? 'bg-green-500 animate-pulse' : 'bg-red-500'
                   }`}></div>
-                  <span className="font-medium">
+                  <span className="font-medium text-[#808080]">
                     {isMonitoring ? 'GPS Monitoring Active' : 'GPS Inactive'}
                   </span>
                 </div>
@@ -620,7 +620,7 @@ export default function GeofencingModal({ isOpen, onClose }: GeofencingModalProp
 
             {/* Zone Statistics */}
             <div className="p-4 bg-white border-b">
-              <h3 className="font-semibold mb-3">Live Statistics</h3>
+              <h3 className="font-semibold mb-3 text-[#808080]">Live Statistics</h3>
               <div className="grid grid-cols-3 gap-2">
                 <div className="text-center">
                   <div className="w-6 h-6 bg-green-500 rounded-full mx-auto mb-1"></div>
@@ -648,7 +648,7 @@ export default function GeofencingModal({ isOpen, onClose }: GeofencingModalProp
 
             {/* Nearby Zones */}
             <div className="p-4">
-              <h3 className="font-semibold mb-3">Nearby Tourist Zones</h3>
+              <h3 className="font-semibold mb-3 text-[#808080]">Nearby Tourist Zones</h3>
               <div className="space-y-2">
                 {nearbyZones.map((zone: any) => (
                   <div 
