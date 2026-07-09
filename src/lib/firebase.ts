@@ -3,7 +3,7 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  // Replace these with your actual Firebase config
+  // Replace these with your actual Firebase config.
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: "safepath-tourist-safety.firebaseapp.com",
   projectId: "safepath-tourist-safety",
