@@ -1,6 +1,6 @@
 // Firebase configuration
 const firebaseConfig = {
-  // Add your Firebase config here or use environment variables
+  // Add your Firebase config here or use environment variables.
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: "safepath-tourist-safety.firebaseapp.com",
   projectId: "safepath-tourist-safety",
